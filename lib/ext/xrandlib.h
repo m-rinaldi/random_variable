@@ -18,5 +18,6 @@
 #define _XRANDLIB_H_
 
 extern int genbern(double p);
+extern double genray(double sigma);
 
 #endif /* _XRANDLIB_H_ */

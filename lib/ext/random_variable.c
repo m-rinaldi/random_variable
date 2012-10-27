@@ -13,6 +13,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
 #ifdef HAVE_RUBY_H
 #include <ruby.h>
 #else 
@@ -42,6 +43,7 @@ static VALUE rb_cBernoulliRV;
 static VALUE rb_cPoissonRV;
 static VALUE rb_cNormalRV;
 static VALUE rb_cExponentialRV;
+static VALUE rb_cRayleighRV;
 
 /******************************************************************************/
 /* Common Functions */
@@ -173,7 +175,7 @@ static inline poisson_rv_t *poisson_rv_create(double lambda)
 		return NULL;
 	}
 
-	/* Chech lambda parameter limits */
+	/* Check lambda parameter limits */
 	if (lambda > POISSON_LAMBDA_MAX) {
 		rb_raise(rb_eArgError, "too high lambda parameter");
 		return NULL;
@@ -331,7 +333,8 @@ VALUE ExponentialRV_new(VALUE self, VALUE lambda)
 	VALUE ExponentialRV_obj;
 
 	rv = exponential_rv_create(NUM2DBL(lambda));
-	ExponentialRV_obj = Data_Wrap_Struct(rb_cExponentialRV, NULL, xfree, rv);
+	ExponentialRV_obj = 
+			Data_Wrap_Struct(rb_cExponentialRV, NULL, xfree, rv);
 	return ExponentialRV_obj;	
 }
 
@@ -344,7 +347,7 @@ static inline exponential_rv_t *_ExponentialRV(VALUE ExponentialRV_obj)
 
 VALUE ExponentialRV_lambda(VALUE self)
 {
-	return 1.0 / _ExponentialRV(self)->mean;
+	return DBL2NUM(1.0 / _ExponentialRV(self)->mean);
 }
 
 static inline VALUE _ExponentialRV_outcome(exponential_rv_t *rv)
@@ -365,6 +368,68 @@ VALUE ExponentialRV_outcomes(VALUE self, VALUE times)
 	return _RV_outcomes(rv, CAST(_ExponentialRV_outcome), times);
 }
 
+/******************************************************************************/
+/* Rayleigh Random Variable */
+/******************************************************************************/
+typedef struct {
+	double sigma;
+} rayleigh_rv_t;
+
+static inline rayleigh_rv_t *rayleigh_rv_create(double sigma)
+{
+	rayleigh_rv_t *rv;
+
+	if (sigma <= 0) {
+		rb_raise(rb_eArgError, "non-positive parameter value");
+		return NULL;
+	}
+
+	rv = ALLOC(rayleigh_rv_t);
+	
+	rv->sigma = sigma;
+	return rv;
+}
+
+VALUE RayleighRV_new(VALUE self, VALUE sigma)
+{
+	rayleigh_rv_t *rv;
+	VALUE RayleighRV_obj;
+
+	rv = rayleigh_rv_create(NUM2DBL(sigma));
+	RayleighRV_obj = 
+			Data_Wrap_Struct(rb_cRayleighRV, NULL, xfree, rv);
+	return RayleighRV_obj;	
+}
+
+static inline rayleigh_rv_t *_RayleighRV(VALUE RayleighRV_obj)
+{
+	rayleigh_rv_t *rv;
+	Data_Get_Struct(RayleighRV_obj, rayleigh_rv_t, rv);
+	return rv;
+}
+
+VALUE RayleighRV_sigma(VALUE self)
+{
+	return DBL2NUM(_RayleighRV(self)->sigma);
+}
+
+static inline VALUE _RayleighRV_outcome(rayleigh_rv_t *rv)
+{
+	return rb_float_new(genray(rv->sigma));
+}
+
+VALUE RayleighRV_outcome(VALUE self)
+{
+	return _RayleighRV_outcome(_RayleighRV(self));
+}
+
+VALUE RayleighRV_outcomes(VALUE self, VALUE times)
+{
+	rayleigh_rv_t *rv;
+	
+	rv = _RayleighRV(self);
+	return _RV_outcomes(rv, CAST(_RayleighRV_outcome), times);
+}
 
 /******************************************************************************/
 /* Extension Initialization */
@@ -409,6 +474,16 @@ void Init_random_variable(void)
 						ExponentialRV_outcome, 0);
 	rb_define_method(rb_cExponentialRV, "outcomes", 
 						ExponentialRV_outcomes, 1);
-		
+
+	/* Rayleigh */
+	rb_cRayleighRV = rb_define_class("Rayleigh", rb_cRandomVariable);
+	rb_define_singleton_method(rb_cRayleighRV, "new",
+						RayleighRV_new, 1);
+	rb_define_method(rb_cRayleighRV, "sigma", RayleighRV_sigma, 0);
+	rb_define_method(rb_cRayleighRV, "outcome", 
+						RayleighRV_outcome, 0);
+	rb_define_method(rb_cRayleighRV, "outcomes", 
+						RayleighRV_outcomes, 1);
+	
 	return;
 }

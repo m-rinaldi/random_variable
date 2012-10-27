@@ -1,7 +1,7 @@
 require 'rake/testtask'
 
 task :default => [:clean, :create] do
-	puts "OK -> The gem was build"		
+	puts "OK => The gem has been build"		
 end
 
 task :clean do
@@ -12,8 +12,3 @@ task :create do
 	sh %q%gem build random_variable.gemspec%
 end
 
-Rake::TestTask.new do |t|
-	t.libs << "test"
-	t.test_files = FileList['test/test*.rb']
-	t.verbose = true
-end

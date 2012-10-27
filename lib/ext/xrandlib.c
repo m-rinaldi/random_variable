@@ -13,10 +13,16 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifdef HAVE_MATH_H
+#include <math.h>
+#else
+#error "Need math.h header"
+#endif /* HAVA_MATH_H */
 
 #include "xrandlib.h"
 #include "randlib.h"
 
+/* Bernoulli */
 int genbern(double p)
 {
 	if (ranf() > p)
@@ -24,5 +30,8 @@ int genbern(double p)
 	return 1;
 }
 
-
-
+/* Rayleigh */
+double genray(double sigma)
+{
+	return sqrt( -2 * sigma * sigma * log(1.0 - ranf()) );
+}
