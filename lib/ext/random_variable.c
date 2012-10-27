@@ -1,17 +1,22 @@
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 // File:     random_variable.c                                                //
 //                                                                            //
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 // Author:   Jorge F.M. Rinaldi                                               //
 // Contact:  jorge.madronal.rinaldi@gmail.com                                 //
 //                                                                            //
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 // Date:     2012/10/11                                                       //
 //                                                                            //
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
 /*******************************************************************************
     random_variable gem for the creation or random variables in Ruby
     Copyright (C) 2012 Jorge Fco. Madronal Rinaldi
@@ -33,19 +38,19 @@
 #ifdef HAVE_RUBY_H
 #include <ruby.h>
 #else 
-#error "Need ruby.h header"
+#error "No ruby.h header found"
 #endif /* HAVE_RUBY_H */
 
 #ifdef HAVE_MATH_H
 #include <math.h>
 #else
-#error "Need math.h header"
+#error "No math.h header found"
 #endif /* HAVE_MATH_H */ 
 
 #ifdef HAVE_LIMITS_H
 #include <limits.h>
 #else
-#error "Need limits.h header"
+#error "No limits.h header found"
 #endif /* HAVE_LIMITS_H */
 
 #include "randlib.h"
@@ -66,6 +71,14 @@ static VALUE rb_cRayleighRV;
 /******************************************************************************/
 #define CAST(f) ((VALUE (*)(void *))(f))
 
+static inline void check_not_nan(double x, const char *str)
+{
+	if (isnan(x))
+		rb_raise(rb_eArgError, "%s", str);
+}
+
+#define CHECK_NOT_NAN(x) check_not_nan((x),"not a number " #x " parameter")
+
 static inline void check_not_infinite(double x, const char *str)
 {
 	if (isfinite(x))
@@ -73,12 +86,16 @@ static inline void check_not_infinite(double x, const char *str)
 	rb_raise(rb_eArgError, "%s", str);
 }
 
-static inline void check_not_nan(double x, const char *str)
+#define CHECK_NOT_INFINITE(x) check_not_infinite((x),"infinite " #x " paramter")
+
+static inline void check_positive(double x, const char *str)
 {
-	if (isnan(x))
-		rb_raise(rb_eArgError, "%s", str);
+	if (x > 0.0)
+		return;
+	rb_raise(rb_eArgError, "%s", str);
 }
 
+#define CHECK_POSITIVE(x) check_positive((x), "non-positive " #x " parameter")
 
 static inline long get_times(VALUE times)
 {
@@ -114,8 +131,8 @@ bernoulli_rv_t *bernoulli_rv_create(double p)
 {
 	bernoulli_rv_t *rv;
 
-	check_not_nan(p, "not a number (NaN) p parameter");
-	check_not_infinite(p, "infinite p parameter");
+	CHECK_NOT_NAN(p);
+	CHECK_NOT_INFINITE(p);
 
 	/* Check p parameter */	
 	if (p <= 0.0 || p >= 1.0) {
@@ -261,10 +278,17 @@ static inline normal_rv_t *normal_rv_create(double mu, double sigma)
 {
 	normal_rv_t *rv;
 
+	check_not_nan(mu, "not a number (NaN) mu parameter");
+	check_not_infinite(mu, "infinite mu parameter");
+
+	check_not_nan(sigma, "not a number (NaN) sigma parameter");
+	check_not_infinite(sigma, "infinite sigma parameter");
+
 	if (sigma <= 0.0) {
 		rb_raise(rb_eArgError, "non-positive sigma parameter");
 		return NULL;
 	}
+
 	
 	rv = ALLOC(normal_rv_t);
 	rv->mu = mu;
@@ -332,6 +356,9 @@ static inline exponential_rv_t *exponential_rv_create(double lambda)
 {
 	exponential_rv_t *rv;
 
+	check_not_nan(lambda, "not a number (NaN) lambda parameter");
+	check_not_infinite(lambda, "infinite lambda parameter");
+
 	if (lambda <= 0) {
 		rb_raise(rb_eArgError, "non-positive parameter value");
 		return NULL;
@@ -394,6 +421,9 @@ typedef struct {
 static inline rayleigh_rv_t *rayleigh_rv_create(double sigma)
 {
 	rayleigh_rv_t *rv;
+
+	check_not_nan(sigma, "not a number (NaN) sigma parameter");
+	check_not_infinite(sigma, "infinite sigma parameter");
 
 	if (sigma <= 0) {
 		rb_raise(rb_eArgError, "non-positive parameter value");
