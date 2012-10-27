@@ -1,0 +1,5 @@
+Makefile
+*.o
+*.bundle
+# For Mac OS X
+.DS_Store
