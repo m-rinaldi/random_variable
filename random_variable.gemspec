@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
 	s.name		=	'random_variable'
-	s.version	=	'0.0.1.pre'
+	s.version	=	'0.0.2.pre'
 	s.date		=	'2012-10-27'
 	s.summary	=	'For creating Random Variables in Ruby'
 	s.description	=	'Bernoulli, Normal, Poisson, Exponential' 
@@ -12,6 +12,9 @@ Gem::Specification.new do |s|
 
 
 	s.extensions << 'lib/ext/extconf.rb'
+	
+	s.files << 'LICENSE'
+	s.files << 'COPYING'
 
 	# more files in the lib directory
 	s.files << 'lib/test.rb'

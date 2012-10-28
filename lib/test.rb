@@ -6,3 +6,4 @@ require 'test/unit'
 
 # unary tests...
 require 'test/test_poisson_rv'
+require 'test/test_rayleigh_rv'

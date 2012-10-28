@@ -65,7 +65,8 @@ static VALUE rb_cPoissonRV;
 static VALUE rb_cNormalRV;
 static VALUE rb_cExponentialRV;
 static VALUE rb_cRayleighRV;
-
+static VALUE rb_cContinuousUniformRV;
+static VALUE rb_cDiscreteUniformRV;
 /******************************************************************************/
 /* Common Functions */
 /******************************************************************************/
@@ -478,6 +479,175 @@ VALUE RayleighRV_outcomes(VALUE self, VALUE times)
 }
 
 /******************************************************************************/
+/* Continuous Uniform Random Variable */
+/******************************************************************************/
+typedef struct {
+	double a;
+	double b;
+} continuous_uniform_rv_t;
+
+static inline
+continuous_uniform_rv_t *continuous_uniform_rv_create(double a, double b)
+{
+	continuous_uniform_rv_t *rv;
+
+	check_not_nan(a, "not a number (NaN) sigma parameter");
+	check_not_infinite(a, "infinite sigma parameter");
+
+	check_not_nan(b, "not a number (NaN) sigma parameter");
+	check_not_infinite(b, "infinite sigma parameter");
+
+	if (a >= b) {
+		rb_raise(rb_eArgError, "a < b");
+		return NULL;
+	}
+
+	rv = ALLOC(continuous_uniform_rv_t);
+	
+	rv->a = a;
+	rv->b = b;
+	return rv;
+}
+
+VALUE ContinuousUniformRV_new(VALUE self, VALUE a, VALUE b)
+{
+	continuous_uniform_rv_t *rv;
+	VALUE ContinuousUniformRV_obj;
+
+	rv = continuous_uniform_rv_create(NUM2DBL(a), NUM2DBL(b));
+	ContinuousUniformRV_obj = 
+		Data_Wrap_Struct(rb_cContinuousUniformRV, NULL, xfree, rv);
+	return ContinuousUniformRV_obj;	
+}
+
+static inline 
+continuous_uniform_rv_t *_ContinuousUniformRV(VALUE ContinuousUniformRV_obj)
+{
+	continuous_uniform_rv_t *rv;
+	Data_Get_Struct(ContinuousUniformRV_obj, continuous_uniform_rv_t, rv);
+	return rv;
+}
+
+VALUE ContinuousUniformRV_a(VALUE self)
+{
+	return DBL2NUM(_ContinuousUniformRV(self)->a);
+}
+
+VALUE ContinuousUniformRV_b(VALUE self)
+{
+	return DBL2NUM(_ContinuousUniformRV(self)->b);
+}
+
+static inline VALUE _ContinuousUniformRV_outcome(continuous_uniform_rv_t *rv)
+{
+	return rb_float_new(genunf(rv->a, rv->b));
+}
+
+VALUE ContinuousUniformRV_outcome(VALUE self)
+{
+	return _ContinuousUniformRV_outcome(_ContinuousUniformRV(self));
+}
+
+VALUE ContinuousUniformRV_outcomes(VALUE self, VALUE times)
+{
+	continuous_uniform_rv_t *rv;
+	
+	rv = _ContinuousUniformRV(self);
+	return _RV_outcomes(rv, CAST(_ContinuousUniformRV_outcome), times);
+}
+
+/******************************************************************************/
+/* Discrete Uniform Random Variable */
+/******************************************************************************/
+typedef struct {
+	long a;
+	long b;
+} discrete_uniform_rv_t;
+
+static inline
+discrete_uniform_rv_t *discrete_uniform_rv_create(long a, long b)
+{
+	discrete_uniform_rv_t *rv;
+
+	check_not_nan(a, "not a number (NaN) sigma parameter");
+	check_not_infinite(a, "infinite sigma parameter");
+
+	check_not_nan(b, "not a number (NaN) sigma parameter");
+	check_not_infinite(b, "infinite sigma parameter");
+
+	if (a >= b) {
+		rb_raise(rb_eArgError, "a < b");
+		return NULL;
+	}
+
+	rv = ALLOC(discrete_uniform_rv_t);
+	
+	rv->a = a;
+	rv->b = b;
+	return rv;
+}
+
+VALUE DiscreteUniformRV_new(VALUE self, VALUE a, VALUE b)
+{
+	discrete_uniform_rv_t *rv;
+	VALUE DiscreteUniformRV_obj;
+
+	/* Check both parameters are integers only */
+	VALUE a_is_integer, b_is_integer;
+	a_is_integer = rb_obj_is_kind_of(a, rb_cInteger);
+	b_is_integer = rb_obj_is_kind_of(b, rb_cInteger);
+	
+	if (!a_is_integer && b_is_integer)
+		rb_raise(rb_eArgError, "not integer a parameter");
+	else if (a_is_integer && !b_is_integer)
+		rb_raise(rb_eArgError, "not integer b parameter");
+	else if (!a_is_integer && !b_is_integer)
+		rb_raise(rb_eArgError, "not integer a and b  parameters");
+		
+
+	rv = discrete_uniform_rv_create(NUM2LONG(a), NUM2LONG(b));
+	DiscreteUniformRV_obj = 
+		Data_Wrap_Struct(rb_cDiscreteUniformRV, NULL, xfree, rv);
+	return DiscreteUniformRV_obj;	
+}
+
+static inline 
+discrete_uniform_rv_t *_DiscreteUniformRV(VALUE DiscreteUniformRV_obj)
+{
+	discrete_uniform_rv_t *rv;
+	Data_Get_Struct(DiscreteUniformRV_obj, discrete_uniform_rv_t, rv);
+	return rv;
+}
+
+VALUE DiscreteUniformRV_a(VALUE self)
+{
+	return NUM2LONG(_DiscreteUniformRV(self)->a);
+}
+
+VALUE DiscreteUniformRV_b(VALUE self)
+{
+	return LONG2NUM(_DiscreteUniformRV(self)->b);
+}
+
+static inline VALUE _DiscreteUniformRV_outcome(discrete_uniform_rv_t *rv)
+{
+	return rb_float_new(genunf(rv->a, rv->b));
+}
+
+VALUE DiscreteUniformRV_outcome(VALUE self)
+{
+	return _DiscreteUniformRV_outcome(_DiscreteUniformRV(self));
+}
+
+VALUE DiscreteUniformRV_outcomes(VALUE self, VALUE times)
+{
+	discrete_uniform_rv_t *rv;
+	
+	rv = _DiscreteUniformRV(self);
+	return _RV_outcomes(rv, CAST(_DiscreteUniformRV_outcome), times);
+}
+
+/******************************************************************************/
 /* Extension Initialization */
 /******************************************************************************/
 void Init_random_variable(void)
@@ -522,7 +692,7 @@ void Init_random_variable(void)
 						ExponentialRV_outcomes, 1);
 
 	/* Rayleigh */
-	rb_cRayleighRV = rb_define_class("Rayleigh", rb_cRandomVariable);
+	rb_cRayleighRV = rb_define_class("RayleighRV", rb_cRandomVariable);
 	rb_define_singleton_method(rb_cRayleighRV, "new",
 						RayleighRV_new, 1);
 	rb_define_method(rb_cRayleighRV, "sigma", RayleighRV_sigma, 0);
@@ -530,6 +700,34 @@ void Init_random_variable(void)
 						RayleighRV_outcome, 0);
 	rb_define_method(rb_cRayleighRV, "outcomes", 
 						RayleighRV_outcomes, 1);
+
+	/* Continuous Uniform */
+	rb_cContinuousUniformRV = 
+		rb_define_class("ContinuousUniformRV", rb_cRandomVariable);
+	rb_define_singleton_method(rb_cContinuousUniformRV, "new",
+				ContinuousUniformRV_new, 2);
+	rb_define_method(rb_cContinuousUniformRV, 
+				"a", ContinuousUniformRV_a, 0);
+	rb_define_method(rb_cContinuousUniformRV, 
+				"b", ContinuousUniformRV_b, 0);
+	rb_define_method(rb_cContinuousUniformRV, "outcome", 
+				ContinuousUniformRV_outcome, 0);
+	rb_define_method(rb_cContinuousUniformRV, "outcomes", 
+				ContinuousUniformRV_outcomes, 1);
+
+	/* Discrete Uniform */
+	rb_cDiscreteUniformRV = 
+		rb_define_class("DiscreteUniformRV", rb_cRandomVariable);
+	rb_define_singleton_method(rb_cDiscreteUniformRV, "new",
+				DiscreteUniformRV_new, 2);
+	rb_define_method(rb_cDiscreteUniformRV, 
+				"a", DiscreteUniformRV_a, 0);
+	rb_define_method(rb_cDiscreteUniformRV, 
+				"b", DiscreteUniformRV_b, 0);
+	rb_define_method(rb_cDiscreteUniformRV, "outcome", 
+				DiscreteUniformRV_outcome, 0);
+	rb_define_method(rb_cDiscreteUniformRV, "outcomes", 
+				DiscreteUniformRV_outcomes, 1);
 	
 	return;
 }
