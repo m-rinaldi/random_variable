@@ -68,6 +68,7 @@ static VALUE rb_cRayleighRV;
 static VALUE rb_cContinuousUniformRV;
 static VALUE rb_cDiscreteUniformRV;
 static VALUE rb_cBetaRV;
+static VALUE rb_cFRV;
 /******************************************************************************/
 /* Common Functions */
 /******************************************************************************/
@@ -687,12 +688,12 @@ beta_rv_t *beta_rv_create(double alpha, double beta)
 	return rv;
 }
 
-VALUE BetaRV_new(VALUE self, VALUE a, VALUE b)
+VALUE BetaRV_new(VALUE self, VALUE alpha, VALUE beta)
 {
 	beta_rv_t *rv;
 	VALUE BetaRV_obj;
 
-	rv = beta_rv_create(NUM2DBL(a), NUM2DBL(b));
+	rv = beta_rv_create(NUM2DBL(alpha), NUM2DBL(beta));
 	BetaRV_obj = 
 		Data_Wrap_Struct(rb_cBetaRV, NULL, xfree, rv);
 	return BetaRV_obj;	
@@ -732,6 +733,82 @@ VALUE BetaRV_outcomes(VALUE self, VALUE times)
 	
 	rv = _BetaRV(self);
 	return _RV_outcomes(rv, CAST(_BetaRV_outcome), times);
+}
+
+/******************************************************************************/
+/* F Random Variable */
+/******************************************************************************/
+typedef struct {
+	double d1;
+	double d2;
+} f_rv_t;
+
+static inline
+f_rv_t *f_rv_create(double d1, double d2)
+{
+	f_rv_t *rv;
+
+	CHECK_NOT_NAN(d1);
+	CHECK_NOT_INFINITE(d1);
+
+	CHECK_NOT_NAN(d2);
+	CHECK_NOT_INFINITE(d2);
+
+	DBL_CHECK_POSITIVE(d1);
+	DBL_CHECK_POSITIVE(d2);
+
+	rv = ALLOC(f_rv_t);
+	
+	rv->d1 = d1;
+	rv->d2 = d2;
+	return rv;
+}
+
+VALUE FRV_new(VALUE self, VALUE d1, VALUE d2)
+{
+	f_rv_t *rv;
+	VALUE FRV_obj;
+
+	rv = f_rv_create(NUM2DBL(d1), NUM2DBL(d2));
+	FRV_obj = 
+		Data_Wrap_Struct(rb_cFRV, NULL, xfree, rv);
+	return FRV_obj;	
+}
+
+static inline 
+f_rv_t *_FRV(VALUE FRV_obj)
+{
+	f_rv_t *rv;
+	Data_Get_Struct(FRV_obj, f_rv_t, rv);
+	return rv;
+}
+
+VALUE FRV_d1(VALUE self)
+{
+	return DBL2NUM(_FRV(self)->d1);
+}
+
+VALUE FRV_d2(VALUE self)
+{
+	return DBL2NUM(_FRV(self)->d2);
+}
+
+static inline VALUE _FRV_outcome(f_rv_t *rv)
+{
+	return rb_float_new(genf(rv->d1, rv->d2));
+}
+
+VALUE FRV_outcome(VALUE self)
+{
+	return _FRV_outcome(_FRV(self));
+}
+
+VALUE FRV_outcomes(VALUE self, VALUE times)
+{
+	f_rv_t *rv;
+	
+	rv = _FRV(self);
+	return _RV_outcomes(rv, CAST(_FRV_outcome), times);
 }
 
 /******************************************************************************/
@@ -815,6 +892,7 @@ void Init_random_variable(void)
 				DiscreteUniformRV_outcome, 0);
 	rb_define_method(rb_cDiscreteUniformRV, "outcomes", 
 				DiscreteUniformRV_outcomes, 1);
+
 	/* Beta */
 	rb_cBetaRV = 
 		rb_define_class("BetaRV", rb_cRandomVariable);
@@ -828,6 +906,20 @@ void Init_random_variable(void)
 				BetaRV_outcome, 0);
 	rb_define_method(rb_cBetaRV, "outcomes", 
 				BetaRV_outcomes, 1);
+
+	/* F */
+	rb_cFRV = 
+		rb_define_class("FRV", rb_cRandomVariable);
+	rb_define_singleton_method(rb_cFRV, "new",
+				FRV_new, 2);
+	rb_define_method(rb_cFRV, 
+				"d1", FRV_d1, 0);
+	rb_define_method(rb_cFRV, 
+				"d2", FRV_d2, 0);
+	rb_define_method(rb_cFRV, "outcome", 
+				FRV_outcome, 0);
+	rb_define_method(rb_cFRV, "outcomes", 
+				FRV_outcomes, 1);
 	
 	return;
 }
