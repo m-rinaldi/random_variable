@@ -54,4 +54,47 @@ double genray(double sigma)
 	return sqrt( -2 * sigma * sigma * log(1.0 - ranf()) );
 }
 
+/* Arcsine */
+double gen_arcsine(void)
+{
+	return pow(sin(M_2_PI * ranf() ), 2);
+}
+
+/* Rectangular */
+double gen_rectangular(void)
+{
+	return (ranf() - 0.5);	
+}
+
+/* Irwin-Hall */
+double gen_irwin_hall(long n)
+{
+	long i;
+	double sum;
+	for (i = 0, sum = 0; i < n; i++)
+		sum += ranf();
+	return sum;	
+}
+
+/* Bates */
+double gen_bates(long n)
+{
+	return genirwinhall(n) / n;
+}
+
+/* Triangular */
+double gen_triangular(double a, double b, double c)
+{
+	double y = ranf();
+	if (y <= (c-a) / (b-a) )
+		return a + sqrt(y*(b-a)*(c-a));
+	return b - sqrt((1-y)*(b-a)*(b-c));
+}
+
+/* Truncated Normal */
+double gen_truncated_normal(double mu, double sigma, double a, double b)
+{
+	return 0.0;	
+}
+
 

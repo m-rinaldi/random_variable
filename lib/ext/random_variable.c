@@ -61,6 +61,7 @@
 /******************************************************************************/
 static VALUE rb_cRandomVariable;
 static VALUE rb_cBernoulliRV;
+static VALUE rb_cBinomialRV;
 static VALUE rb_cPoissonRV;
 static VALUE rb_cNormalRV;
 static VALUE rb_cExponentialRV;
@@ -114,7 +115,59 @@ static inline void long_check_positive(long x, const char *str)
 #define LONG_CHECK_POSITIVE(x) long_check_positive((x), \
 			"non-positive " #x " parameter")
 
+static inline void dbl_check_non_neg(double x, const char *str)
+{
+	if (x >= 0.0)
+		return;
+	rb_raise(rb_eArgError, "%s", str);
+}
 
+#define DBL_CHECK_NON_NEG(x) long_check_positive((x), \
+			"negative " #x " parameter")
+
+static inline void long_check_non_neg(long x, const char *str)
+{
+	if (x >= 0)
+		return;
+	rb_raise(rb_eArgError, "%s", str);
+}
+
+#define LONG_CHECK_NON_NEG(x) long_check_non_neg((x), \
+			"negative " #x " parameter")
+
+static inline int
+dbl_check_cinterval(double x, double min, double max, 
+			const char *lower, const char *greater)
+{
+	if (x < min)
+		rb_raise(rb_eArgError, "%s", lower);
+	else if (x > max)			
+		rb_raise(rb_eArgError, "%s", greater);
+	return;
+}
+
+#define DBL_CHECK_CINTERVAL(x,min,max)				\
+	(dbl_check_cinterval((x), (min), (max), 		\
+	#x " parameter out of bounds (" #x " < " #min ")", 	\
+	#x " parameter out of bounds (" #x " > " #max ")")) 	
+
+#define CHECK_PROBABILITY(x) DBL_CHECK_CINTERVAL(x,0.0,1.0)
+
+static inline int
+dbl_check_ointerval(double x, double min, double max, 
+			const char *lower, const char *greater)
+{
+	if (x <= min)
+		rb_raise(rb_eArgError, "%s", lower);
+	else if (x >= max)			
+		rb_raise(rb_eArgError, "%s", greater);
+	return;
+}
+
+#define DBL_CHECK_OINTERVAL(x,min,max)				\
+	(dbl_check_ointerval((x), (min), (max), 		\
+	#x " parameter out of bounds (" #x " <= " #min ")", 	\
+	#x " parameter out of bounds (" #x " >= " #max ")")) 	
 
 static inline long get_times(VALUE times)
 {
@@ -206,12 +259,85 @@ VALUE BernoulliRV_outcomes(VALUE self, VALUE times)
 }
 
 /******************************************************************************/
+/* Binomial Random Variable */
+/******************************************************************************/
+typedef struct {
+	long n;
+	double p;
+} binomial_rv_t;
+
+binomial_rv_t *binomial_rv_create(long n, double p)
+{
+	binomial_rv_t *rv;
+
+	LONG_CHECK_NON_NEG(n);
+	
+
+	CHECK_NOT_NAN(p);
+	CHECK_NOT_INFINITE(p);
+	CHECK_PROBABILITY(p);
+
+	/* n & p parameters correct */	
+	rv = ALLOC(binomial_rv_t);
+	rv->n = n;
+	rv->p = p;
+	return rv;
+}
+
+VALUE BinomialRV_new(VALUE self, VALUE n, VALUE p)
+{
+	binomial_rv_t *rv;
+	VALUE rb_obj; 
+
+	Check_Type(n, T_FIXNUM);
+	rv = binomial_rv_create(NUM2LONG(n), NUM2DBL(p));
+	rb_obj = Data_Wrap_Struct(rb_cBinomialRV, NULL, xfree, rv);
+	return rb_obj;	
+}
+
+static inline binomial_rv_t *_BinomialRV(VALUE BinomialRV_obj)
+{
+	binomial_rv_t *rv;
+	Data_Get_Struct(BinomialRV_obj, binomial_rv_t, rv);
+	return rv;
+}
+
+VALUE BinomialRV_n(VALUE self)
+{
+	return LONG2NUM(_BinomialRV(self)->n);
+}
+
+VALUE BinomialRV_p(VALUE self)
+{
+	return rb_float_new(_BinomialRV(self)->p);
+}
+
+static inline VALUE _BinomialRV_outcome(binomial_rv_t *rv)
+{
+	return INT2FIX(ignbin(rv->n, rv->p));
+}
+
+VALUE BinomialRV_outcome(VALUE self)
+{
+	return _BinomialRV_outcome(_BinomialRV(self));	
+}
+
+VALUE BinomialRV_outcomes(VALUE self, VALUE times)
+{
+	binomial_rv_t *rv;
+	
+	rv = _BinomialRV(self);
+	return _RV_outcomes(rv, CAST(_BinomialRV_outcome), times);
+}	
+
+/******************************************************************************/
 /* Poisson Random Variable */
 /******************************************************************************/
 typedef struct {
 	double lambda;
 } poisson_rv_t;
 
+/* avoid overflow */
 #define POISSON_LAMBDA_MAX (LONG_MAX - (long)(0.00001*LONG_MAX))
 
 static inline poisson_rv_t *poisson_rv_create(double lambda)
@@ -825,6 +951,14 @@ void Init_random_variable(void)
 	rb_define_method(rb_cBernoulliRV, "p", BernoulliRV_p, 0);
 	rb_define_method(rb_cBernoulliRV, "outcome", BernoulliRV_outcome, 0);
 	rb_define_method(rb_cBernoulliRV, "outcomes", BernoulliRV_outcomes, 1);
+
+	/* Binomial */
+	rb_cBinomialRV = rb_define_class("BinomialRV", rb_cRandomVariable);
+	rb_define_singleton_method(rb_cBinomialRV, "new", BinomialRV_new, 2);
+	rb_define_method(rb_cBinomialRV, "n", BinomialRV_n, 0);
+	rb_define_method(rb_cBinomialRV, "p", BinomialRV_p, 0);
+	rb_define_method(rb_cBinomialRV, "outcome", BinomialRV_outcome, 0);
+	rb_define_method(rb_cBinomialRV, "outcomes", BinomialRV_outcomes, 1);
 
 	/* PoissonRV */
 	rb_cPoissonRV = rb_define_class("PoissonRV", rb_cRandomVariable);
