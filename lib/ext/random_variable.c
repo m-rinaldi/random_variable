@@ -67,6 +67,7 @@ static VALUE rb_cExponentialRV;
 static VALUE rb_cRayleighRV;
 static VALUE rb_cContinuousUniformRV;
 static VALUE rb_cDiscreteUniformRV;
+static VALUE rb_cBetaRV;
 /******************************************************************************/
 /* Common Functions */
 /******************************************************************************/
@@ -78,7 +79,8 @@ static inline void check_not_nan(double x, const char *str)
 		rb_raise(rb_eArgError, "%s", str);
 }
 
-#define CHECK_NOT_NAN(x) check_not_nan((x),"not a number " #x " parameter")
+#define CHECK_NOT_NAN(x) check_not_nan((x), \
+			"not a number (NaN) " #x " parameter")
 
 static inline void check_not_infinite(double x, const char *str)
 {
@@ -89,14 +91,29 @@ static inline void check_not_infinite(double x, const char *str)
 
 #define CHECK_NOT_INFINITE(x) check_not_infinite((x),"infinite " #x " paramter")
 
-static inline void check_positive(double x, const char *str)
+
+static inline void dbl_check_positive(double x, const char *str)
 {
 	if (x > 0.0)
 		return;
 	rb_raise(rb_eArgError, "%s", str);
 }
 
-#define CHECK_POSITIVE(x) check_positive((x), "non-positive " #x " parameter")
+#define DBL_CHECK_POSITIVE(x) dbl_check_positive((x), \
+			"non-positive " #x " parameter")
+
+
+static inline void long_check_positive(long x, const char *str)
+{
+	if (x > 0)
+		return;
+	rb_raise(rb_eArgError, "%s", str);
+}
+
+#define LONG_CHECK_POSITIVE(x) long_check_positive((x), \
+			"non-positive " #x " parameter")
+
+
 
 static inline long get_times(VALUE times)
 {
@@ -491,11 +508,11 @@ continuous_uniform_rv_t *continuous_uniform_rv_create(double a, double b)
 {
 	continuous_uniform_rv_t *rv;
 
-	check_not_nan(a, "not a number (NaN) sigma parameter");
-	check_not_infinite(a, "infinite sigma parameter");
+	check_not_nan(a, "not a number (NaN) a parameter");
+	check_not_infinite(a, "infinite a parameter");
 
-	check_not_nan(b, "not a number (NaN) sigma parameter");
-	check_not_infinite(b, "infinite sigma parameter");
+	check_not_nan(b, "not a number (NaN) b parameter");
+	check_not_infinite(b, "infinite b parameter");
 
 	if (a >= b) {
 		rb_raise(rb_eArgError, "a < b");
@@ -569,14 +586,8 @@ discrete_uniform_rv_t *discrete_uniform_rv_create(long a, long b)
 {
 	discrete_uniform_rv_t *rv;
 
-	check_not_nan(a, "not a number (NaN) sigma parameter");
-	check_not_infinite(a, "infinite sigma parameter");
-
-	check_not_nan(b, "not a number (NaN) sigma parameter");
-	check_not_infinite(b, "infinite sigma parameter");
-
 	if (a >= b) {
-		rb_raise(rb_eArgError, "a < b");
+		rb_raise(rb_eArgError, "not a < b");
 		return NULL;
 	}
 
@@ -621,7 +632,7 @@ discrete_uniform_rv_t *_DiscreteUniformRV(VALUE DiscreteUniformRV_obj)
 
 VALUE DiscreteUniformRV_a(VALUE self)
 {
-	return NUM2LONG(_DiscreteUniformRV(self)->a);
+	return LONG2NUM(_DiscreteUniformRV(self)->a);
 }
 
 VALUE DiscreteUniformRV_b(VALUE self)
@@ -645,6 +656,82 @@ VALUE DiscreteUniformRV_outcomes(VALUE self, VALUE times)
 	
 	rv = _DiscreteUniformRV(self);
 	return _RV_outcomes(rv, CAST(_DiscreteUniformRV_outcome), times);
+}
+
+/******************************************************************************/
+/* Beta Random Variable */
+/******************************************************************************/
+typedef struct {
+	double alpha;
+	double beta;
+} beta_rv_t;
+
+static inline
+beta_rv_t *beta_rv_create(double alpha, double beta)
+{
+	beta_rv_t *rv;
+
+	CHECK_NOT_NAN(alpha);
+	CHECK_NOT_INFINITE(alpha);
+
+	CHECK_NOT_NAN(beta);
+	CHECK_NOT_INFINITE(beta);
+
+	DBL_CHECK_POSITIVE(alpha);
+	DBL_CHECK_POSITIVE(beta);
+
+	rv = ALLOC(beta_rv_t);
+	
+	rv->alpha = alpha;
+	rv->beta = beta;
+	return rv;
+}
+
+VALUE BetaRV_new(VALUE self, VALUE a, VALUE b)
+{
+	beta_rv_t *rv;
+	VALUE BetaRV_obj;
+
+	rv = beta_rv_create(NUM2DBL(a), NUM2DBL(b));
+	BetaRV_obj = 
+		Data_Wrap_Struct(rb_cBetaRV, NULL, xfree, rv);
+	return BetaRV_obj;	
+}
+
+static inline 
+beta_rv_t *_BetaRV(VALUE BetaRV_obj)
+{
+	beta_rv_t *rv;
+	Data_Get_Struct(BetaRV_obj, beta_rv_t, rv);
+	return rv;
+}
+
+VALUE BetaRV_alpha(VALUE self)
+{
+	return DBL2NUM(_BetaRV(self)->alpha);
+}
+
+VALUE BetaRV_beta(VALUE self)
+{
+	return DBL2NUM(_BetaRV(self)->beta);
+}
+
+static inline VALUE _BetaRV_outcome(beta_rv_t *rv)
+{
+	return rb_float_new(genbet(rv->alpha, rv->beta));
+}
+
+VALUE BetaRV_outcome(VALUE self)
+{
+	return _BetaRV_outcome(_BetaRV(self));
+}
+
+VALUE BetaRV_outcomes(VALUE self, VALUE times)
+{
+	beta_rv_t *rv;
+	
+	rv = _BetaRV(self);
+	return _RV_outcomes(rv, CAST(_BetaRV_outcome), times);
 }
 
 /******************************************************************************/
@@ -728,6 +815,19 @@ void Init_random_variable(void)
 				DiscreteUniformRV_outcome, 0);
 	rb_define_method(rb_cDiscreteUniformRV, "outcomes", 
 				DiscreteUniformRV_outcomes, 1);
+	/* Beta */
+	rb_cBetaRV = 
+		rb_define_class("BetaRV", rb_cRandomVariable);
+	rb_define_singleton_method(rb_cBetaRV, "new",
+				BetaRV_new, 2);
+	rb_define_method(rb_cBetaRV, 
+				"alpha", BetaRV_alpha, 0);
+	rb_define_method(rb_cBetaRV, 
+				"beta", BetaRV_beta, 0);
+	rb_define_method(rb_cBetaRV, "outcome", 
+				BetaRV_outcome, 0);
+	rb_define_method(rb_cBetaRV, "outcomes", 
+				BetaRV_outcomes, 1);
 	
 	return;
 }

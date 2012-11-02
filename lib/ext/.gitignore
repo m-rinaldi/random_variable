@@ -3,3 +3,5 @@ Makefile
 *.bundle
 # For Mac OS X
 .DS_Store
+*.log
+*.so
