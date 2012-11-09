@@ -33,7 +33,19 @@
 
 require_relative 'ext/random_variable'
 
-class RandomVariable
+module RandomVariable 
+	def self.list
+		distros = []
+		self.constants.each do |c|
+			c = self.const_get(c)
+			if c.is_a? Class and c != self::Generic then
+				distros << c
+			end
+		end
+		distros
+	end
+	
+	class Generic	
 	klass = self
 
 	def initialize(&blk)
@@ -67,7 +79,9 @@ class RandomVariable
 		end
 		ary	
 	end
+	
 
+end
 end
 
 module Math

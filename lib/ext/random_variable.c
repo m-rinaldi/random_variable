@@ -59,7 +59,8 @@
 /******************************************************************************/
 /* class objects */
 /******************************************************************************/
-static VALUE rb_cRandomVariable;
+static VALUE rb_mRandomVariable;
+static VALUE rb_cGenericRV;
 static VALUE rb_cBernoulliRV;
 static VALUE rb_cBinomialRV;
 static VALUE rb_cPoissonRV;
@@ -943,25 +944,29 @@ VALUE FRV_outcomes(VALUE self, VALUE times)
 void Init_random_variable(void)
 {
 	/* RandomVariable */
-	rb_cRandomVariable = rb_define_class("RandomVariable", rb_cObject);
+	rb_mRandomVariable = rb_define_module("RandomVariable");
 
-	/* BernoulliRV */
-	rb_cBernoulliRV = rb_define_class("BernoulliRV", rb_cRandomVariable);
+	/* Generic */
+	rb_cGenericRV = rb_define_class_under(rb_mRandomVariable, "Generic",
+						rb_cObject);
+
+	/* Bernoulli */
+	rb_cBernoulliRV = rb_define_class_under(rb_mRandomVariable,"Bernoulli", rb_cGenericRV);
 	rb_define_singleton_method(rb_cBernoulliRV, "new", BernoulliRV_new, 1);
 	rb_define_method(rb_cBernoulliRV, "p", BernoulliRV_p, 0);
 	rb_define_method(rb_cBernoulliRV, "outcome", BernoulliRV_outcome, 0);
 	rb_define_method(rb_cBernoulliRV, "outcomes", BernoulliRV_outcomes, 1);
 
 	/* Binomial */
-	rb_cBinomialRV = rb_define_class("BinomialRV", rb_cRandomVariable);
+	rb_cBinomialRV = rb_define_class_under(rb_mRandomVariable,"Binomial", rb_cGenericRV);
 	rb_define_singleton_method(rb_cBinomialRV, "new", BinomialRV_new, 2);
 	rb_define_method(rb_cBinomialRV, "n", BinomialRV_n, 0);
 	rb_define_method(rb_cBinomialRV, "p", BinomialRV_p, 0);
 	rb_define_method(rb_cBinomialRV, "outcome", BinomialRV_outcome, 0);
 	rb_define_method(rb_cBinomialRV, "outcomes", BinomialRV_outcomes, 1);
 
-	/* PoissonRV */
-	rb_cPoissonRV = rb_define_class("PoissonRV", rb_cRandomVariable);
+	/* Poisson */
+	rb_cPoissonRV = rb_define_class_under(rb_mRandomVariable,"Poisson", rb_cGenericRV);
 	rb_define_singleton_method(rb_cPoissonRV, "new", PoissonRV_new, 1);
 	rb_define_singleton_method(rb_cPoissonRV, 
 			"lambda_max", PoissonRV_max_lambda, 0);
@@ -971,15 +976,14 @@ void Init_random_variable(void)
 	rb_define_method(rb_cPoissonRV, "outcome", PoissonRV_outcome, 0);	
 	rb_define_method(rb_cPoissonRV, "outcomes", PoissonRV_outcomes, 1);
 
-	/* NormalRV */
-	rb_cNormalRV = rb_define_class("NormalRV", rb_cRandomVariable);
+	/* Normal */
+	rb_cNormalRV = rb_define_class_under(rb_mRandomVariable,"Normal", rb_cGenericRV);
 	rb_define_singleton_method(rb_cNormalRV, "new", NormalRV_new, 2);
 	rb_define_method(rb_cNormalRV, "outcome", NormalRV_outcome, 0);	
 	rb_define_method(rb_cNormalRV, "outcomes", NormalRV_outcomes, 1);
 
-	/* ExponentialRV */
-	rb_cExponentialRV = rb_define_class("ExponentialRV", 
-						rb_cRandomVariable);
+	/* Exponential */
+	rb_cExponentialRV = rb_define_class_under(rb_mRandomVariable,"Exponential", rb_cGenericRV);
 	rb_define_singleton_method(rb_cExponentialRV, "new", 
 						ExponentialRV_new, 1);
 	rb_define_method(rb_cExponentialRV, "lambda", ExponentialRV_lambda, 0);
@@ -990,7 +994,7 @@ void Init_random_variable(void)
 						ExponentialRV_outcomes, 1);
 
 	/* Rayleigh */
-	rb_cRayleighRV = rb_define_class("RayleighRV", rb_cRandomVariable);
+	rb_cRayleighRV = rb_define_class_under(rb_mRandomVariable,"Rayleigh", rb_cGenericRV);
 	rb_define_singleton_method(rb_cRayleighRV, "new",
 						RayleighRV_new, 1);
 	rb_define_method(rb_cRayleighRV, "sigma", RayleighRV_sigma, 0);
@@ -1001,7 +1005,7 @@ void Init_random_variable(void)
 
 	/* Continuous Uniform */
 	rb_cContinuousUniformRV = 
-		rb_define_class("ContinuousUniformRV", rb_cRandomVariable);
+		rb_define_class_under(rb_mRandomVariable,"ContinuousUniform", rb_cGenericRV);
 	rb_define_singleton_method(rb_cContinuousUniformRV, "new",
 				ContinuousUniformRV_new, 2);
 	rb_define_method(rb_cContinuousUniformRV, 
@@ -1015,7 +1019,7 @@ void Init_random_variable(void)
 
 	/* Discrete Uniform */
 	rb_cDiscreteUniformRV = 
-		rb_define_class("DiscreteUniformRV", rb_cRandomVariable);
+		rb_define_class_under(rb_mRandomVariable,"DiscreteUniform", rb_cGenericRV);
 	rb_define_singleton_method(rb_cDiscreteUniformRV, "new",
 				DiscreteUniformRV_new, 2);
 	rb_define_method(rb_cDiscreteUniformRV, 
@@ -1029,7 +1033,7 @@ void Init_random_variable(void)
 
 	/* Beta */
 	rb_cBetaRV = 
-		rb_define_class("BetaRV", rb_cRandomVariable);
+		rb_define_class_under(rb_mRandomVariable,"Beta", rb_cGenericRV);
 	rb_define_singleton_method(rb_cBetaRV, "new",
 				BetaRV_new, 2);
 	rb_define_method(rb_cBetaRV, 
@@ -1043,7 +1047,7 @@ void Init_random_variable(void)
 
 	/* F */
 	rb_cFRV = 
-		rb_define_class("FRV", rb_cRandomVariable);
+		rb_define_class_under(rb_mRandomVariable,"F", rb_cGenericRV);
 	rb_define_singleton_method(rb_cFRV, "new",
 				FRV_new, 2);
 	rb_define_method(rb_cFRV, 
