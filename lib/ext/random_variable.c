@@ -41,6 +41,12 @@
 #error "No ruby.h header found"
 #endif /* HAVE_RUBY_H */
 
+#ifdef HAVE_STDARG_H
+#include <stdarg.h>
+#else 
+#error "No stdarg.h header found"
+#endif /* HAVE_STDARG_H */
+
 #ifdef HAVE_MATH_H
 #include <math.h>
 #else
@@ -56,6 +62,195 @@
 #include "randlib.h"
 #include "xrandlib.h"
 
+typedef enum {
+	RV_T_GENERIC,
+	RV_T_POISSON
+} type_t;
+
+#define RV_NR_PARAMS_GENERIC	1
+#define RV_NR_PARAMS_POISSON	1
+
+typedef struct {
+	type_t type;
+
+#define RANDVAR_DATA(randvarp)		((rv)->data)
+	union {
+
+	struct {
+		double lambda;	
+	} poisson;
+#define RANDVAR_POISSON_LAMBDA(rv)					\
+					(RANDVAR_DATA(rv).poisson.lambda)
+#define RANDVAR_POISSON_OUTCOME(rv)	(ignpoi(RANDVAR_POISSON_LAMBDA(rv)))
+#define RANDVAR_POISSON_RB_OUTCOME(rv)					\
+		(LONG2NUM(RANDVAR_POISSON_OUTCOME(rv)))
+
+	} data;	
+} randvar_t;
+#define RANDVAR_ALLOC()		ALLOC(randvar_t)
+#define RANDVAR_TYPE(rv)	((rv)->type)
+
+/******************************************************************************/
+/* class and module objects */
+/******************************************************************************/
+static VALUE rb_mRandomVariable;
+static VALUE rb_cGeneric;
+static VALUE rb_cPoisson;
+
+static type_t type(VALUE obj)
+{
+	if (obj == rb_cGeneric)
+		return RV_T_GENERIC;
+	if (obj == rb_cPoisson)
+		return RV_T_POISSON;
+
+	/* it should never reach this point */
+	rb_raise(rb_eException, "unkown random variable type");
+}
+
+
+/******************************************************************************/
+/* functions and macros for parameter validity checks */
+/******************************************************************************/
+#define CHECK_POSITIVE(x) do {						\
+				if ((x) <= 0.0)				\
+					rb_raise(rb_eArgError,		\
+						"non-positive " #x 	\
+						" parameter");		\
+			} while (0)
+
+/******************************************************************************/
+/* instantiate Ruby random variable objects */
+/******************************************************************************/
+#define GET_NEXT_ARG(ap)	va_arg((ap), VALUE)
+#define CREATE_WRAPPING(rv)	Data_Wrap_Struct(klass, NULL, xfree, (rv))
+VALUE rb_create_instance(VALUE rb_obj, ...)
+{
+	va_list ap;
+	randvar_t *rv = NULL;
+	VALUE rb_rv = Qnil;
+	VALUE klass = 0;
+
+	/* initialize ap for use with the va_arg and va_end macros */
+	va_start(ap, rb_obj);
+
+	switch (type(rb_obj)) {
+		case RV_T_POISSON:
+		{
+			VALUE rb_lambda;
+			double lambda;
+			
+			klass = rb_cPoisson;
+			
+			rb_lambda = GET_NEXT_ARG(ap);
+			lambda = NUM2DBL(rb_lambda); 
+			/* lambda > 0 */
+			CHECK_POSITIVE(lambda);
+			
+			/* lambda parameter correct */
+			rv = RANDVAR_ALLOC();
+			RANDVAR_TYPE(rv) = RV_T_POISSON;
+			RANDVAR_POISSON_LAMBDA(rv) = lambda;
+			rb_rv = CREATE_WRAPPING(rv);
+		
+			break;	
+		}
+				
+	} /* switch */
+	va_end(ap);
+	return rb_rv;
+}
+#undef CREATE_WRAPPING
+#undef GET_NEXT_ARG
+
+/******************************************************************************/
+/* obtain an outcome from the Ruby random variable object */
+/******************************************************************************/
+#define GET_DATA(rb_obj, rv)	Data_Get_Struct((rb_obj), randvar_t, (rv))
+VALUE rb_outcome(VALUE rb_obj)
+{
+	randvar_t *rv = NULL;
+	VALUE klass = Qnil;
+	
+	GET_DATA(rb_obj, rv);
+
+	switch (RANDVAR_TYPE(rv)) {
+		case RV_T_POISSON:
+			return RANDVAR_POISSON_RB_OUTCOME(rv);
+		default:
+			return Qnil;	
+	}
+}
+
+static inline long get_nr_times(VALUE rb_nr_times)
+{
+	long nr_times;
+	Check_Type(rb_nr_times, T_FIXNUM);
+	if (0 > (nr_times = NUM2LONG(rb_nr_times)))
+		rb_raise(rb_eArgError, 
+			"the number of outcomes cannot be negative");	
+	return nr_times;
+}
+/******************************************************************************/
+/* obtain an outcome from the Ruby random variable object */
+/******************************************************************************/
+#define LOOP	for (; nr_times > 0; --nr_times)
+VALUE rb_outcomes(VALUE rb_obj, VALUE rb_nr_times)
+{
+	randvar_t *rv = NULL;
+	VALUE outcomes_ary;
+	long nr_times;
+
+	nr_times = get_nr_times(rb_nr_times);
+
+	GET_DATA(rb_obj, rv);
+
+	/* create the array */
+	outcomes_ary = rb_ary_new();
+
+	switch (RANDVAR_TYPE(rv)) {
+		case RV_T_POISSON:
+			LOOP rb_ary_push(outcomes_ary, 
+					RANDVAR_POISSON_RB_OUTCOME(rv));
+			break;
+		default:
+			return Qnil;	
+	}
+	return outcomes_ary;
+}
+#undef GET_DATA
+
+/******************************************************************************/
+/* extension entry point */
+/******************************************************************************/
+#define CREATE_RANDOM_VARIABLE_CLASS(name, cObj, nr_params)		\
+	do {								\
+		(cObj) = rb_define_class_under(rb_mRandomVariable,	\
+			name, rb_cGeneric);				\
+		rb_define_singleton_method((cObj), "new", 		\
+			(VALUE (*) (ANYARGS)) rb_create_instance,	\
+			(nr_params));					\
+		rb_define_method((cObj), "outcome", rb_outcome, 0);	\
+		rb_define_method((cObj), "outcomes", rb_outcomes, 1);	\
+	} while (0)
+
+
+void Init_random_variable(void)
+{
+	/* RandomVariable */
+	rb_mRandomVariable = rb_define_module("RandomVariable");
+
+	/* Generic */
+	rb_cGeneric = rb_define_class_under(rb_mRandomVariable, "Generic",
+						rb_cObject);
+
+	CREATE_RANDOM_VARIABLE_CLASS("Poisson", rb_cPoisson, 
+							RV_NR_PARAMS_POISSON);
+}
+#undef CREATE_RANDOM_VARIABLE_CLASS
+
+/* old code */
+#if 0
 /******************************************************************************/
 /* class objects */
 /******************************************************************************/
@@ -1062,4 +1257,4 @@ void Init_random_variable(void)
 	return;
 }
 
-
+#endif /* #if 0 */
