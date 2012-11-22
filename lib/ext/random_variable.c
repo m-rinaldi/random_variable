@@ -62,47 +62,85 @@
 #include "randlib.h"
 #include "xrandlib.h"
 
+/******************************************************************************/
+/* random variable types */
+/******************************************************************************/
 typedef enum {
-	RV_T_GENERIC,
-	RV_T_POISSON
+	rv_type_generic = 0,
+
+	rv_type_bernoulli,
+	rv_type_poisson,
+
+	/* end of random variable types */	
+
+	RV_NR_TYPES /* has to be the last element in the enum */
 } type_t;
+#define NR_RANDOM_VARIABLES	RV_NR_TYPES
 
-#define RV_NR_PARAMS_GENERIC	1
-#define RV_NR_PARAMS_POISSON	1
+#define RV_NR_PARAMS(name, nr_params)					\
+	static const int rv_ ##name ##_nr_params = 1
 
+/******************************************************************************/
+/* number of parameters for each random variable type */
+/******************************************************************************/
+RV_NR_PARAMS(generic, 1);
+RV_NR_PARAMS(poisson, 1);
+
+#define RANDVAR_DATA	data
 typedef struct {
 	type_t type;
+#define RANDVAR_TYPE(rv)	((rv)->type)
 
-#define RANDVAR_DATA(randvarp)		((rv)->data)
 	union {
-
-	struct {
-		double lambda;	
-	} poisson;
-#define RANDVAR_POISSON_LAMBDA(rv)					\
-					(RANDVAR_DATA(rv).poisson.lambda)
-#define RANDVAR_POISSON_OUTCOME(rv)	(ignpoi(RANDVAR_POISSON_LAMBDA(rv)))
-#define RANDVAR_POISSON_RB_OUTCOME(rv)					\
-		(LONG2NUM(RANDVAR_POISSON_OUTCOME(rv)))
-
-	} data;	
+	struct { double p; } bernoulli;
+	struct { double lambda; } poisson;
+	} RANDVAR_DATA;	/* union */
 } randvar_t;
 #define RANDVAR_ALLOC()		ALLOC(randvar_t)
-#define RANDVAR_TYPE(rv)	((rv)->type)
+
+#define CREATE_RANDVAR_ACCESSOR(name, param, type)			\
+	static inline type 						\
+	randvar_##name ##_ ##param(randvar_t *rv)			\
+	{								\
+		return rv->RANDVAR_DATA . name . param;			\
+	}								\
+	static inline void						\
+	randvar_##name ##_set_ ##param(randvar_t *rv, type param)	\
+	{								\
+		rv->RANDVAR_DATA . name . param = param;		\
+	}
+
+#define CREATE_RANDVAR_OUTCOME_FUNC1(name, func, type, param)		\
+	static inline type 						\
+	randvar_##name ##_ ##outcome(randvar_t *rv)			\
+	{								\
+		return func(randvar_##name ##_ ##param(rv));		\
+	}
+
+#define CREATE_RANDVAR_RB_OUTCOME(name, conv)				\
+	static inline VALUE						\
+	randvar_##name ##_rb_ ##outcome(randvar_t *rv)			\
+	{								\
+		return 	conv((randvar_##name ##_outcome(rv)));		\
+	}
+
+/* poisson */
+CREATE_RANDVAR_ACCESSOR(poisson,lambda, double)
+CREATE_RANDVAR_OUTCOME_FUNC1(poisson, ignpoi, long, lambda)
+CREATE_RANDVAR_RB_OUTCOME(poisson, LONG2NUM)
 
 /******************************************************************************/
 /* class and module objects */
 /******************************************************************************/
 static VALUE rb_mRandomVariable;
-static VALUE rb_cGeneric;
-static VALUE rb_cPoisson;
+static VALUE rb_cRandomVariables[NR_RANDOM_VARIABLES];
 
-static type_t type(VALUE obj)
+static type_t type(VALUE rb_obj)
 {
-	if (obj == rb_cGeneric)
-		return RV_T_GENERIC;
-	if (obj == rb_cPoisson)
-		return RV_T_POISSON;
+	int i;
+	for (i = 0; i < NR_RANDOM_VARIABLES; i++)
+		if (rb_obj == rb_cRandomVariables[i])
+			return i;
 
 	/* it should never reach this point */
 	rb_raise(rb_eException, "unkown random variable type");
@@ -122,6 +160,8 @@ static type_t type(VALUE obj)
 /******************************************************************************/
 /* instantiate Ruby random variable objects */
 /******************************************************************************/
+#define SET_KLASS(name)							\
+		(klass = rb_cRandomVariables[rv_type_ ##name])
 #define GET_NEXT_ARG(ap)	va_arg((ap), VALUE)
 #define CREATE_WRAPPING(rv)	Data_Wrap_Struct(klass, NULL, xfree, (rv))
 VALUE rb_create_instance(VALUE rb_obj, ...)
@@ -135,13 +175,13 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 	va_start(ap, rb_obj);
 
 	switch (type(rb_obj)) {
-		case RV_T_POISSON:
+		case rv_type_poisson:
 		{
 			VALUE rb_lambda;
 			double lambda;
 			
-			klass = rb_cPoisson;
-			
+			SET_KLASS(poisson);
+
 			rb_lambda = GET_NEXT_ARG(ap);
 			lambda = NUM2DBL(rb_lambda); 
 			/* lambda > 0 */
@@ -149,8 +189,8 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 			
 			/* lambda parameter correct */
 			rv = RANDVAR_ALLOC();
-			RANDVAR_TYPE(rv) = RV_T_POISSON;
-			RANDVAR_POISSON_LAMBDA(rv) = lambda;
+			RANDVAR_TYPE(rv) = rv_type_poisson;
+			randvar_poisson_set_lambda(rv, lambda);
 			rb_rv = CREATE_WRAPPING(rv);
 		
 			break;	
@@ -175,8 +215,8 @@ VALUE rb_outcome(VALUE rb_obj)
 	GET_DATA(rb_obj, rv);
 
 	switch (RANDVAR_TYPE(rv)) {
-		case RV_T_POISSON:
-			return RANDVAR_POISSON_RB_OUTCOME(rv);
+		case rv_type_poisson:
+			return randvar_poisson_rb_outcome(rv);
 		default:
 			return Qnil;	
 	}
@@ -192,7 +232,7 @@ static inline long get_nr_times(VALUE rb_nr_times)
 	return nr_times;
 }
 /******************************************************************************/
-/* obtain an outcome from the Ruby random variable object */
+/* obtain several outcomes from the Ruby random variable object */
 /******************************************************************************/
 #define LOOP	for (; nr_times > 0; --nr_times)
 VALUE rb_outcomes(VALUE rb_obj, VALUE rb_nr_times)
@@ -209,9 +249,9 @@ VALUE rb_outcomes(VALUE rb_obj, VALUE rb_nr_times)
 	outcomes_ary = rb_ary_new();
 
 	switch (RANDVAR_TYPE(rv)) {
-		case RV_T_POISSON:
+		case rv_type_poisson:
 			LOOP rb_ary_push(outcomes_ary, 
-					RANDVAR_POISSON_RB_OUTCOME(rv));
+					randvar_poisson_rb_outcome(rv));
 			break;
 		default:
 			return Qnil;	
@@ -223,29 +263,31 @@ VALUE rb_outcomes(VALUE rb_obj, VALUE rb_nr_times)
 /******************************************************************************/
 /* extension entry point */
 /******************************************************************************/
-#define CREATE_RANDOM_VARIABLE_CLASS(name, cObj, nr_params)		\
+#define CREATE_RANDOM_VARIABLE_CLASS(rb_name, name)			\
 	do {								\
-		(cObj) = rb_define_class_under(rb_mRandomVariable,	\
-			name, rb_cGeneric);				\
-		rb_define_singleton_method((cObj), "new", 		\
+		VALUE *rb_objp = &rb_cRandomVariables[rv_type_ ##name]; \
+									\
+		*rb_objp = rb_define_class_under(rb_mRandomVariable,	\
+			rb_name, rb_cRandomVariables[rv_type_generic]);	\
+									\
+		rb_define_singleton_method(*rb_objp, "new", 		\
 			(VALUE (*) (ANYARGS)) rb_create_instance,	\
-			(nr_params));					\
-		rb_define_method((cObj), "outcome", rb_outcome, 0);	\
-		rb_define_method((cObj), "outcomes", rb_outcomes, 1);	\
+			rv_ ##name ##_nr_params);			\
+									\
+		rb_define_method(*rb_objp, "outcome" , rb_outcome,  0);	\
+		rb_define_method(*rb_objp, "outcomes", rb_outcomes, 1);	\
 	} while (0)
 
 
 void Init_random_variable(void)
 {
-	/* RandomVariable */
+	/* the RandomVariable module */
 	rb_mRandomVariable = rb_define_module("RandomVariable");
-
 	/* Generic */
-	rb_cGeneric = rb_define_class_under(rb_mRandomVariable, "Generic",
-						rb_cObject);
-
-	CREATE_RANDOM_VARIABLE_CLASS("Poisson", rb_cPoisson, 
-							RV_NR_PARAMS_POISSON);
+	rb_cRandomVariables[rv_type_generic] = 
+		rb_define_class_under(rb_mRandomVariable, 
+						"Generic", rb_cObject);
+	CREATE_RANDOM_VARIABLE_CLASS("Poisson", poisson);
 }
 #undef CREATE_RANDOM_VARIABLE_CLASS
 

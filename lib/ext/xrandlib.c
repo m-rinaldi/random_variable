@@ -40,8 +40,7 @@
 #include "xrandlib.h"
 #include "randlib.h"
 
-/* Bernoulli */
-int genbern(double p)
+int gen_bernoulli(double p)
 {
 	if (ranf() > p)
 		return 0;
