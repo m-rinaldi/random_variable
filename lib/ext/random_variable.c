@@ -71,6 +71,7 @@ typedef enum {
 	rv_type_bernoulli,
 	rv_type_normal,
 	rv_type_poisson,
+	rv_type_rayleigh,
 
 	/* end of random variable types */	
 
@@ -84,15 +85,16 @@ typedef struct {
 #define RANDVAR_TYPE(rv)	((rv)->type)
 
 	union {
-	struct { double p; } bernoulli;
-	struct { double mu; double sigma; } normal;
-	struct { double lambda; } poisson;
+		struct { double p; } bernoulli;
+		struct { double mu; double sigma; } normal;
+		struct { double lambda; } poisson;
+		struct { double sigma; } rayleigh;
 	} RANDVAR_DATA;	/* union */
 } randvar_t;
 #define RANDVAR_ALLOC()		ALLOC(randvar_t)
 
 #define RV_NR_PARAMS(name, nr_params)					\
-	static const int rv_ ##name ##_nr_params = nr_params
+	static const int rv_ ##name ##_nr_params = nr_params;
 
 #define CREATE_RANDVAR_ACCESSOR(name, param, type)			\
 	static inline type 						\
@@ -130,23 +132,28 @@ typedef struct {
 
 
 /* generic */
-RV_NR_PARAMS(generic, 1);
+RV_NR_PARAMS(generic, 1)
 /* bernoulli */
-RV_NR_PARAMS(bernoulli, 1);
+RV_NR_PARAMS(bernoulli, 1)
 CREATE_RANDVAR_ACCESSOR(bernoulli, p, double)
 CREATE_RANDVAR_OUTCOME_FUNC1(bernoulli, gen_bernoulli, int, p)
 CREATE_RANDVAR_RB_OUTCOME(bernoulli, INT2NUM)
 /* normal */
-RV_NR_PARAMS(normal, 2);
+RV_NR_PARAMS(normal, 2)
 CREATE_RANDVAR_ACCESSOR(normal, mu, double)
 CREATE_RANDVAR_ACCESSOR(normal, sigma, double)
 CREATE_RANDVAR_OUTCOME_FUNC2(normal, gennor, double, mu, sigma)
 CREATE_RANDVAR_RB_OUTCOME(normal, DBL2NUM)
 /* poisson */
-RV_NR_PARAMS(poisson, 1);
+RV_NR_PARAMS(poisson, 1)
 CREATE_RANDVAR_ACCESSOR(poisson,lambda, double)
 CREATE_RANDVAR_OUTCOME_FUNC1(poisson, ignpoi, long, lambda)
 CREATE_RANDVAR_RB_OUTCOME(poisson, LONG2NUM)
+/* rayleigh */
+RV_NR_PARAMS(rayleigh, 1)
+CREATE_RANDVAR_ACCESSOR(rayleigh, sigma, double)
+CREATE_RANDVAR_OUTCOME_FUNC1(rayleigh, gen_rayleigh, double, sigma)
+CREATE_RANDVAR_RB_OUTCOME(rayleigh, DBL2NUM)
 
 /******************************************************************************/
 /* class and module objects */
@@ -198,7 +205,14 @@ static type_t type(VALUE rb_obj)
 		RANDVAR_TYPE(rv) = rv_type_ ##name;			\
 		rb_rv = CREATE_WRAPPING(rv);				\
 	} while (0)		
-				
+
+#define CASE(name)							\
+			case rv_type_ ##name:				\
+			{		
+
+#define CASE_END							\
+			break;						\
+			}	
 /******************************************************************************/
 /* instantiate Ruby random variable objects */
 /******************************************************************************/
@@ -229,6 +243,7 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 
 			break;
 		}
+
 		case rv_type_normal:
 		{
 			VALUE rb_mu, rb_sigma;
@@ -251,6 +266,7 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 			
 			break;
 		}
+
 		case rv_type_poisson:
 		{
 			VALUE rb_lambda;
@@ -269,6 +285,23 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 		
 			break;	
 		}
+		
+		CASE(rayleigh)
+			VALUE rb_sigma;
+			double sigma;
+
+			SET_KLASS(rayleigh);
+
+			rb_sigma = GET_NEXT_ARG(ap);
+			sigma = NUM2DBL(rb_sigma);
+		
+			/* sigma > 0 */
+			CHECK_POSITIVE(sigma);
+
+			RANDVAR_INIT(rayleigh);
+			SET_PARAM(rayleigh, sigma);				
+		CASE_END
+
 		default:
 			rb_rv = Qnil;
 				
@@ -281,6 +314,8 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 #undef GET_NEXT_ARG
 #undef SET_PARAM
 #undef RANDVAR_INIT
+#undef CASE
+#undef CASE_END
 
 /******************************************************************************/
 /* obtain a single outcome from the Ruby random variable object */
@@ -289,8 +324,6 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 VALUE rb_outcome(VALUE rb_obj)
 {
 	randvar_t *rv = NULL;
-	VALUE klass = Qnil;
-	int i;
 	
 	GET_DATA(rb_obj, rv);
 
@@ -359,6 +392,7 @@ void Init_random_variable(void)
 	CREATE_RANDOM_VARIABLE_CLASS("Bernoulli", bernoulli);
 	CREATE_RANDOM_VARIABLE_CLASS("Normal", normal);
 	CREATE_RANDOM_VARIABLE_CLASS("Poisson", poisson);
+	CREATE_RANDOM_VARIABLE_CLASS("Rayleigh", rayleigh);
 }
 #undef CREATE_RANDOM_VARIABLE_CLASS
 

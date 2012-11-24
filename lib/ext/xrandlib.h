@@ -17,7 +17,8 @@
 #ifndef _XRANDLIB_H_
 #define _XRANDLIB_H_
 
-extern int genbern(double p);
-extern double genray(double sigma);
+extern int gen_bernoulli(double);
+extern long ignpoi(double);
+extern double gen_rayleigh(double);
 
 #endif /* _XRANDLIB_H_ */

@@ -48,7 +48,7 @@ int gen_bernoulli(double p)
 }
 
 /* Rayleigh */
-double genray(double sigma)
+double gen_rayleigh(double sigma)
 {
 	return sqrt( -2 * sigma * sigma * log(1.0 - ranf()) );
 }
