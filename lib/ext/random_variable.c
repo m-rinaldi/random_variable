@@ -69,6 +69,7 @@ typedef enum {
 	rv_type_generic = 0,
 
 	rv_type_bernoulli,
+	rv_type_f,
 	rv_type_normal,
 	rv_type_poisson,
 	rv_type_rayleigh,
@@ -86,7 +87,8 @@ typedef struct {
 
 	union {
 		struct { double p; } bernoulli;
-		struct { double mu; double sigma; } normal;
+		struct { double d1, d2; } f;
+		struct { double mu, sigma; } normal;
 		struct { double lambda; } poisson;
 		struct { double sigma; } rayleigh;
 	} RANDVAR_DATA;	/* union */
@@ -138,6 +140,12 @@ RV_NR_PARAMS(bernoulli, 1)
 CREATE_RANDVAR_ACCESSOR(bernoulli, p, double)
 CREATE_RANDVAR_OUTCOME_FUNC1(bernoulli, gen_bernoulli, int, p)
 CREATE_RANDVAR_RB_OUTCOME(bernoulli, INT2NUM)
+/* f */
+RV_NR_PARAMS(f, 2)
+CREATE_RANDVAR_ACCESSOR(f, d1, double)
+CREATE_RANDVAR_ACCESSOR(f, d2, double)
+CREATE_RANDVAR_OUTCOME_FUNC2(f, genf, double, d1, d2)
+CREATE_RANDVAR_RB_OUTCOME(f, DBL2NUM)
 /* normal */
 RV_NR_PARAMS(normal, 2)
 CREATE_RANDVAR_ACCESSOR(normal, mu, double)
@@ -224,8 +232,7 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 	va_start(ap, rb_obj);
 
 	switch (type(rb_obj)) {
-		case rv_type_bernoulli:
-		{
+		CASE(bernoulli)
 			VALUE rb_p;
 			double p;
 
@@ -240,12 +247,32 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 			/* p parameter correct */
 			RANDVAR_INIT(bernoulli);
 			SET_PARAM(bernoulli, p);
+		CASE_END
 
-			break;
-		}
+		CASE(f)
+			VALUE rb_d1, rb_d2;
+			double d1, d2;
+			
+			SET_KLASS(f);
 
-		case rv_type_normal:
-		{
+			rb_d1 = GET_NEXT_ARG(ap);
+			rb_d2 = GET_NEXT_ARG(ap);
+
+			d1 = NUM2DBL(rb_d1);
+			d2 = NUM2DBL(rb_d2);
+
+			/* d1 > 0 */
+			/* d2 > 0 */
+			CHECK_POSITIVE(d1);
+			CHECK_POSITIVE(d2);
+
+			/* d1, d2 parameters correct */
+			RANDVAR_INIT(f);
+			SET_PARAM(f, d1);
+			SET_PARAM(f, d2);
+		CASE_END
+
+		CASE(normal)
 			VALUE rb_mu, rb_sigma;
 			double mu, sigma;
 			
@@ -263,12 +290,9 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 			RANDVAR_INIT(normal);
 			SET_PARAM(normal, mu);
 			SET_PARAM(normal, sigma);
-			
-			break;
-		}
+		CASE_END		
 
-		case rv_type_poisson:
-		{
+		CASE(poisson)
 			VALUE rb_lambda;
 			double lambda;
 			
@@ -282,10 +306,8 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 			/* lambda parameter correct */
 			RANDVAR_INIT(poisson);
 			SET_PARAM(poisson, lambda);
-		
-			break;	
-		}
-		
+		CASE_END
+	
 		CASE(rayleigh)
 			VALUE rb_sigma;
 			double sigma;
@@ -390,6 +412,7 @@ void Init_random_variable(void)
 		rb_define_class_under(rb_mRandomVariable, 
 						"Generic", rb_cObject);
 	CREATE_RANDOM_VARIABLE_CLASS("Bernoulli", bernoulli);
+	CREATE_RANDOM_VARIABLE_CLASS("F", f);
 	CREATE_RANDOM_VARIABLE_CLASS("Normal", normal);
 	CREATE_RANDOM_VARIABLE_CLASS("Poisson", poisson);
 	CREATE_RANDOM_VARIABLE_CLASS("Rayleigh", rayleigh);
