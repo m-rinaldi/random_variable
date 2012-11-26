@@ -69,6 +69,7 @@ typedef enum {
 	rv_type_generic = 0,
 
 	rv_type_bernoulli,
+	rv_type_beta,
 	rv_type_continuous_uniform,
 	rv_type_discrete_uniform,
 	rv_type_exponential,
@@ -90,6 +91,7 @@ typedef struct {
 
 	union {
 		struct { double p; } bernoulli;
+		struct { double alpha, beta; } beta;
 		struct { double a,b; } continuous_uniform;
 		struct { long a,b; } discrete_uniform;
 		struct { double lambda; } exponential;
@@ -146,6 +148,12 @@ RV_NR_PARAMS(bernoulli, 1)
 CREATE_RANDVAR_ACCESSOR(bernoulli, p, double)
 CREATE_RANDVAR_OUTCOME_FUNC1(bernoulli, gen_bernoulli, int, p)
 CREATE_RANDVAR_RB_OUTCOME(bernoulli, INT2NUM)
+/* beta */
+RV_NR_PARAMS(beta, 2)
+CREATE_RANDVAR_ACCESSOR(beta, alpha, double)
+CREATE_RANDVAR_ACCESSOR(beta, beta, double)
+CREATE_RANDVAR_OUTCOME_FUNC2(beta, genbet, double, alpha, beta)
+CREATE_RANDVAR_RB_OUTCOME(beta, DBL2NUM)
 /* continuous uniform */
 RV_NR_PARAMS(continuous_uniform, 2)
 CREATE_RANDVAR_ACCESSOR(continuous_uniform, a, double)
@@ -285,6 +293,30 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 			/* p parameter correct */
 			RANDVAR_INIT(bernoulli);
 			SET_PARAM(bernoulli, p);
+		CASE_END
+
+		CASE(beta)
+			VALUE rb_alpha, rb_beta;
+			double alpha, beta;
+
+			SET_KLASS(beta);
+
+			rb_alpha = GET_NEXT_ARG(ap);
+			rb_beta  = GET_NEXT_ARG(ap);
+			
+			alpha = NUM2DBL(rb_alpha);
+			beta  = NUM2DBL(rb_beta);
+
+			/* alpha > 0 */
+			CHECK_POSITIVE(alpha);
+
+			/* beta > 0 */
+			CHECK_POSITIVE(beta);
+
+			/* alpha and beta parameters correct */
+			RANDVAR_INIT(beta);
+			SET_PARAM(beta, alpha);
+			SET_PARAM(beta, beta);
 		CASE_END
 
 		CASE(continuous_uniform)
@@ -512,6 +544,7 @@ void Init_random_variable(void)
 		rb_define_class_under(rb_mRandomVariable, 
 						"Generic", rb_cObject);
 	CREATE_RANDOM_VARIABLE_CLASS("Bernoulli", bernoulli);
+	CREATE_RANDOM_VARIABLE_CLASS("Beta", beta);
 	CREATE_RANDOM_VARIABLE_CLASS("ContinuousUniform", continuous_uniform);
 	CREATE_RANDOM_VARIABLE_CLASS("DiscreteUniform", discrete_uniform);
 	CREATE_RANDOM_VARIABLE_CLASS("Exponential", exponential);
