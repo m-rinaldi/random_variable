@@ -1,17 +1,13 @@
-gem_description = "Create and operate with Random Variables in Ruby\n"
-distributions = %W(Bernoulli Binomial Exponential Rayleigh Continous\ Uniform Discrete\ Uniform Beta F Normal Poisson);
-distributions.sort!
-distributions = distributions.join "\n"
-gem_description << "To date, the supported distributions are:\n" 
-gem_description << distributions
-
+version = '1.0.0'
+date = Time.now; date = "%d-%02d-%02d" % [date.year, date.month, date.day]
 
 Gem::Specification.new do |s|
 	s.name		=	'random_variable'
-	s.version	=	'0.1.0'
-	s.date		=	'2012-11-17'
+	s.version	=	version
+	s.date		=	date
 	s.summary	=	'Random Variables in Ruby'
-	s.description	=	gem_description 
+	s.description	=	'Create and operate with random variables ' +
+				'in Ruby'
 	s.authors	=	['Jorge Fco. Madronal Rinaldi']
 	s.email		=	'jorge.madronal.rinaldi@gmail.com'
 	s.license	=	'GPLv3'
@@ -19,6 +15,8 @@ Gem::Specification.new do |s|
 	s.homepage	=	'http://mrinaldi.net/random_variable'	
 
 
+	#s.required_ruby_version = '>= 1.9.1'
+	
 	s.extensions << 'lib/ext/extconf.rb'
 	
 	s.files << 'LICENSE'
