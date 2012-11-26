@@ -70,6 +70,7 @@ typedef enum {
 
 	rv_type_bernoulli,
 	rv_type_beta,
+	rv_type_binomial,
 	rv_type_continuous_uniform,
 	rv_type_discrete_uniform,
 	rv_type_exponential,
@@ -92,6 +93,7 @@ typedef struct {
 	union {
 		struct { double p; } bernoulli;
 		struct { double alpha, beta; } beta;
+		struct { long n; double p; } binomial;
 		struct { double a,b; } continuous_uniform;
 		struct { long a,b; } discrete_uniform;
 		struct { double lambda; } exponential;
@@ -154,6 +156,12 @@ CREATE_RANDVAR_ACCESSOR(beta, alpha, double)
 CREATE_RANDVAR_ACCESSOR(beta, beta, double)
 CREATE_RANDVAR_OUTCOME_FUNC2(beta, genbet, double, alpha, beta)
 CREATE_RANDVAR_RB_OUTCOME(beta, DBL2NUM)
+/* binomial */
+RV_NR_PARAMS(binomial, 2)
+CREATE_RANDVAR_ACCESSOR(binomial, n, long)
+CREATE_RANDVAR_ACCESSOR(binomial, p, double)
+CREATE_RANDVAR_OUTCOME_FUNC2(binomial, ignbin, long, n, p)
+CREATE_RANDVAR_RB_OUTCOME(binomial, LONG2NUM)
 /* continuous uniform */
 RV_NR_PARAMS(continuous_uniform, 2)
 CREATE_RANDVAR_ACCESSOR(continuous_uniform, a, double)
@@ -218,27 +226,47 @@ static type_t type(VALUE rb_obj)
 /******************************************************************************/
 /* functions and macros for parameter validity checks */
 /******************************************************************************/
-#define CHECK_POSITIVE(x) do {						\
+#define CHECK_POSITIVE(x) 						\
+			do {						\
 				if ((x) <= 0.0)				\
 					rb_raise(rb_eArgError,		\
 						"non-positive " #x 	\
 						" parameter");		\
-			     } while (0)
+			} while (0)
 
-#define CHECK_LESS_THAN(a,b) do {					\
+#define CHECK_NON_NEGATIVE(x) 						\
+			do {						\
+				if ((x) < 0.0)				\
+					rb_raise(rb_eArgError,		\
+						"negative " #x 		\
+						" parameter");		\
+			} while (0)
+
+#define CHECK_LESS_THAN(a,b) 						\
+			do {						\
 				if ((a) >= (b))				\
 					rb_raise(rb_eArgError,		\
 						#a " parameter not "	\
 						"lower than " #b	\
 						" parameter");		\
-				} while (0)				
+			} while (0)				
 
-#define CHECK_INTEGER(x) do {						\
+#define CHECK_RB_INTEGER(x, str) 					\
+			do {						\
 				if (!rb_obj_is_kind_of(x, rb_cInteger))	\
 					rb_raise(rb_eArgError,		\
-						#x " parameter not "	\
+						str " parameter not "	\
 						"integer");		\
-			    } while (0)
+			} while (0)
+
+#define CHECK_PROBABILITY(x) 						\
+			do {						\
+				if (x > 1.0 || x < 0.0)			\
+					rb_raise(rb_eArgError,		\
+						#x " parameter "	\
+						"is not a "		\
+						"probability");		\
+			} while (0)	
 
 #define VAR_DECLARATIONS	va_list ap;				\
 				randvar_t *rv = NULL;			\
@@ -287,8 +315,8 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 			rb_p = GET_NEXT_ARG(ap);
 			p = NUM2DBL(rb_p);
 	
-			/* p > 0 */
-			CHECK_POSITIVE(p);
+			/* 0 <= p <= 1 */
+			CHECK_PROBABILITY(p);
 
 			/* p parameter correct */
 			RANDVAR_INIT(bernoulli);
@@ -317,6 +345,33 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 			RANDVAR_INIT(beta);
 			SET_PARAM(beta, alpha);
 			SET_PARAM(beta, beta);
+		CASE_END
+
+		CASE(binomial)
+			VALUE rb_n, rb_p;
+			long n;
+			double p;
+
+			SET_KLASS(binomial);
+			
+			rb_n = GET_NEXT_ARG(ap);
+			rb_p = GET_NEXT_ARG(ap);
+
+			CHECK_RB_INTEGER(rb_n, "n");
+
+			n = NUM2LONG(rb_n);
+			p = NUM2DBL(rb_p);
+		
+			/* n >= 0 */	
+			CHECK_NON_NEGATIVE(n);
+
+			/* 0 <= p <= 1 */
+			CHECK_PROBABILITY(p);
+		
+			/* n and p parameters correct */	
+			RANDVAR_INIT(binomial);
+			SET_PARAM(binomial, n);
+			SET_PARAM(binomial, p);
 		CASE_END
 
 		CASE(continuous_uniform)
@@ -349,8 +404,8 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 			rb_a = GET_NEXT_ARG(ap);
 			rb_b = GET_NEXT_ARG(ap);
 
-			CHECK_INTEGER(rb_a);
-			CHECK_INTEGER(rb_b);
+			CHECK_RB_INTEGER(rb_a, "a");
+			CHECK_RB_INTEGER(rb_b, "b");
 
 			a = NUM2LONG(rb_a);
 			b = NUM2LONG(rb_b);
@@ -545,6 +600,7 @@ void Init_random_variable(void)
 						"Generic", rb_cObject);
 	CREATE_RANDOM_VARIABLE_CLASS("Bernoulli", bernoulli);
 	CREATE_RANDOM_VARIABLE_CLASS("Beta", beta);
+	CREATE_RANDOM_VARIABLE_CLASS("Binomial", binomial);
 	CREATE_RANDOM_VARIABLE_CLASS("ContinuousUniform", continuous_uniform);
 	CREATE_RANDOM_VARIABLE_CLASS("DiscreteUniform", discrete_uniform);
 	CREATE_RANDOM_VARIABLE_CLASS("Exponential", exponential);
