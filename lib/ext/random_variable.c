@@ -69,6 +69,7 @@ typedef enum {
 	rv_type_generic = 0,
 
 	rv_type_bernoulli,
+	rv_type_exponential,
 	rv_type_f,
 	rv_type_normal,
 	rv_type_poisson,
@@ -88,6 +89,7 @@ typedef struct {
 	union {
 		struct { double p; } bernoulli;
 		struct { double d1, d2; } f;
+		struct { double lambda; } exponential;
 		struct { double mu, sigma; } normal;
 		struct { double lambda; } poisson;
 		struct { double sigma; } rayleigh;
@@ -140,6 +142,11 @@ RV_NR_PARAMS(bernoulli, 1)
 CREATE_RANDVAR_ACCESSOR(bernoulli, p, double)
 CREATE_RANDVAR_OUTCOME_FUNC1(bernoulli, gen_bernoulli, int, p)
 CREATE_RANDVAR_RB_OUTCOME(bernoulli, INT2NUM)
+/* exponential */
+RV_NR_PARAMS(exponential, 1)
+CREATE_RANDVAR_ACCESSOR(exponential, lambda, double)
+CREATE_RANDVAR_OUTCOME_FUNC1(exponential, gen_exponential , double, lambda)
+CREATE_RANDVAR_RB_OUTCOME(exponential, DBL2NUM)
 /* f */
 RV_NR_PARAMS(f, 2)
 CREATE_RANDVAR_ACCESSOR(f, d1, double)
@@ -247,6 +254,23 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 			/* p parameter correct */
 			RANDVAR_INIT(bernoulli);
 			SET_PARAM(bernoulli, p);
+		CASE_END
+
+		CASE(exponential)
+			VALUE rb_lambda;
+			double lambda;
+
+			SET_KLASS(exponential);
+
+			rb_lambda = GET_NEXT_ARG(ap);
+			lambda = NUM2DBL(rb_lambda);
+
+			/* lambda > 0 */
+			CHECK_POSITIVE(lambda);
+
+			/* lambda parameter correct */
+			RANDVAR_INIT(exponential);
+			SET_PARAM(exponential, lambda);
 		CASE_END
 
 		CASE(f)
@@ -412,6 +436,7 @@ void Init_random_variable(void)
 		rb_define_class_under(rb_mRandomVariable, 
 						"Generic", rb_cObject);
 	CREATE_RANDOM_VARIABLE_CLASS("Bernoulli", bernoulli);
+	CREATE_RANDOM_VARIABLE_CLASS("Exponential", exponential);
 	CREATE_RANDOM_VARIABLE_CLASS("F", f);
 	CREATE_RANDOM_VARIABLE_CLASS("Normal", normal);
 	CREATE_RANDOM_VARIABLE_CLASS("Poisson", poisson);

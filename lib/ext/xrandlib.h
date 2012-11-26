@@ -18,7 +18,7 @@
 #define _XRANDLIB_H_
 
 extern int gen_bernoulli(double);
-extern long ignpoi(double);
+extern double gen_exponential(double);
 extern double gen_rayleigh(double);
 
 #endif /* _XRANDLIB_H_ */

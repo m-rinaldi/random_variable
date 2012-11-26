@@ -47,6 +47,11 @@ int gen_bernoulli(double p)
 	return 1;
 }
 
+double gen_exponential(double lambda)
+{
+	return genexp(1.0 / lambda);
+}
+
 /* Rayleigh */
 double gen_rayleigh(double sigma)
 {
