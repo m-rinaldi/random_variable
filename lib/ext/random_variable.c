@@ -69,6 +69,8 @@ typedef enum {
 	rv_type_generic = 0,
 
 	rv_type_bernoulli,
+	rv_type_continuous_uniform,
+	rv_type_discrete_uniform,
 	rv_type_exponential,
 	rv_type_f,
 	rv_type_normal,
@@ -88,8 +90,10 @@ typedef struct {
 
 	union {
 		struct { double p; } bernoulli;
-		struct { double d1, d2; } f;
+		struct { double a,b; } continuous_uniform;
+		struct { long a,b; } discrete_uniform;
 		struct { double lambda; } exponential;
+		struct { double d1, d2; } f;
 		struct { double mu, sigma; } normal;
 		struct { double lambda; } poisson;
 		struct { double sigma; } rayleigh;
@@ -142,6 +146,18 @@ RV_NR_PARAMS(bernoulli, 1)
 CREATE_RANDVAR_ACCESSOR(bernoulli, p, double)
 CREATE_RANDVAR_OUTCOME_FUNC1(bernoulli, gen_bernoulli, int, p)
 CREATE_RANDVAR_RB_OUTCOME(bernoulli, INT2NUM)
+/* continuous uniform */
+RV_NR_PARAMS(continuous_uniform, 2)
+CREATE_RANDVAR_ACCESSOR(continuous_uniform, a, double)
+CREATE_RANDVAR_ACCESSOR(continuous_uniform, b, double)
+CREATE_RANDVAR_OUTCOME_FUNC2(continuous_uniform, genunf, double, a, b)
+CREATE_RANDVAR_RB_OUTCOME(continuous_uniform, DBL2NUM)
+/* discrete uniform */
+RV_NR_PARAMS(discrete_uniform, 2)
+CREATE_RANDVAR_ACCESSOR(discrete_uniform, a, long)
+CREATE_RANDVAR_ACCESSOR(discrete_uniform, b, long)
+CREATE_RANDVAR_OUTCOME_FUNC2(discrete_uniform, ignuin, long, a, b)
+CREATE_RANDVAR_RB_OUTCOME(discrete_uniform, LONG2NUM)
 /* exponential */
 RV_NR_PARAMS(exponential, 1)
 CREATE_RANDVAR_ACCESSOR(exponential, lambda, double)
@@ -199,7 +215,22 @@ static type_t type(VALUE rb_obj)
 					rb_raise(rb_eArgError,		\
 						"non-positive " #x 	\
 						" parameter");		\
-			} while (0)
+			     } while (0)
+
+#define CHECK_LESS_THAN(a,b) do {					\
+				if ((a) >= (b))				\
+					rb_raise(rb_eArgError,		\
+						#a " parameter not "	\
+						"lower than " #b	\
+						" parameter");		\
+				} while (0)				
+
+#define CHECK_INTEGER(x) do {						\
+				if (!rb_obj_is_kind_of(x, rb_cInteger))	\
+					rb_raise(rb_eArgError,		\
+						#x " parameter not "	\
+						"integer");		\
+			    } while (0)
 
 #define VAR_DECLARATIONS	va_list ap;				\
 				randvar_t *rv = NULL;			\
@@ -254,6 +285,51 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 			/* p parameter correct */
 			RANDVAR_INIT(bernoulli);
 			SET_PARAM(bernoulli, p);
+		CASE_END
+
+		CASE(continuous_uniform)
+			VALUE rb_a, rb_b;
+			double a,b;
+
+			SET_KLASS(continuous_uniform);
+
+			rb_a = GET_NEXT_ARG(ap);
+			rb_b = GET_NEXT_ARG(ap);
+
+			a = NUM2DBL(rb_a);
+			b = NUM2DBL(rb_b);
+
+			/* a < b */
+			CHECK_LESS_THAN(a,b);
+
+			/* a and b parameters correct */
+			RANDVAR_INIT(continuous_uniform);
+			SET_PARAM(continuous_uniform, a);
+			SET_PARAM(continuous_uniform, b);
+		CASE_END
+
+		CASE(discrete_uniform)
+			VALUE rb_a, rb_b;
+			double a,b;
+
+			SET_KLASS(discrete_uniform);
+
+			rb_a = GET_NEXT_ARG(ap);
+			rb_b = GET_NEXT_ARG(ap);
+
+			CHECK_INTEGER(rb_a);
+			CHECK_INTEGER(rb_b);
+
+			a = NUM2LONG(rb_a);
+			b = NUM2LONG(rb_b);
+
+			/* a < b */
+			CHECK_LESS_THAN(a,b);
+
+			/* a and b parameters correct */
+			RANDVAR_INIT(discrete_uniform);
+			SET_PARAM(discrete_uniform, a);
+			SET_PARAM(discrete_uniform, b);
 		CASE_END
 
 		CASE(exponential)
@@ -436,6 +512,8 @@ void Init_random_variable(void)
 		rb_define_class_under(rb_mRandomVariable, 
 						"Generic", rb_cObject);
 	CREATE_RANDOM_VARIABLE_CLASS("Bernoulli", bernoulli);
+	CREATE_RANDOM_VARIABLE_CLASS("ContinuousUniform", continuous_uniform);
+	CREATE_RANDOM_VARIABLE_CLASS("DiscreteUniform", discrete_uniform);
 	CREATE_RANDOM_VARIABLE_CLASS("Exponential", exponential);
 	CREATE_RANDOM_VARIABLE_CLASS("F", f);
 	CREATE_RANDOM_VARIABLE_CLASS("Normal", normal);
