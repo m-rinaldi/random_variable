@@ -97,10 +97,10 @@ typedef struct {
 		struct { long n; double p; } binomial;
 		struct { double a,b; } continuous_uniform;
 		struct { long a,b; } discrete_uniform;
-		struct { double lambda; } exponential;
+		struct { double mean; } exponential;
 		struct { double d1, d2; } f;
 		struct { double mu, sigma; } normal;
-		struct { double lambda; } poisson;
+		struct { double mean; } poisson;
 		struct { double sigma; } rayleigh;
 	} RANDVAR_DATA;	/* union */
 } randvar_t;
@@ -177,8 +177,8 @@ CREATE_RANDVAR_OUTCOME_FUNC2(discrete_uniform, ignuin, long, a, b)
 CREATE_RANDVAR_RB_OUTCOME(discrete_uniform, LONG2NUM)
 /* exponential */
 RV_NR_PARAMS(exponential, 1)
-CREATE_RANDVAR_ACCESSOR(exponential, lambda, double)
-CREATE_RANDVAR_OUTCOME_FUNC1(exponential, gen_exponential , double, lambda)
+CREATE_RANDVAR_ACCESSOR(exponential, mean, double)
+CREATE_RANDVAR_OUTCOME_FUNC1(exponential, genexp , double, mean)
 CREATE_RANDVAR_RB_OUTCOME(exponential, DBL2NUM)
 /* f */
 RV_NR_PARAMS(f, 2)
@@ -194,8 +194,8 @@ CREATE_RANDVAR_OUTCOME_FUNC2(normal, gennor, double, mu, sigma)
 CREATE_RANDVAR_RB_OUTCOME(normal, DBL2NUM)
 /* poisson */
 RV_NR_PARAMS(poisson, 1)
-CREATE_RANDVAR_ACCESSOR(poisson,lambda, double)
-CREATE_RANDVAR_OUTCOME_FUNC1(poisson, ignpoi, long, lambda)
+CREATE_RANDVAR_ACCESSOR(poisson, mean, double)
+CREATE_RANDVAR_OUTCOME_FUNC1(poisson, ignpoi, long, mean)
 CREATE_RANDVAR_RB_OUTCOME(poisson, LONG2NUM)
 /* rayleigh */
 RV_NR_PARAMS(rayleigh, 1)
@@ -423,20 +423,20 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 		CASE_END
 
 		CASE(exponential)
-			VALUE rb_lambda;
-			double lambda;
+			VALUE rb_mean;
+			double mean;
 
 			SET_KLASS(exponential);
 
-			rb_lambda = GET_NEXT_ARG(ap);
-			lambda = NUM2DBL(rb_lambda);
+			rb_mean = GET_NEXT_ARG(ap);
+			mean = NUM2DBL(rb_mean);
 
-			/* lambda > 0 */
-			CHECK_POSITIVE(lambda);
+			/* mean > 0 */
+			CHECK_POSITIVE(mean);
 
-			/* lambda parameter correct */
+			/* mean parameter correct */
 			RANDVAR_INIT(exponential);
-			SET_PARAM(exponential, lambda);
+			SET_PARAM(exponential, mean);
 		CASE_END
 
 		CASE(f)
@@ -483,19 +483,19 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 		CASE_END		
 
 		CASE(poisson)
-			VALUE rb_lambda;
-			double lambda;
+			VALUE rb_mean;
+			double mean;
 			
 			SET_KLASS(poisson);
 
-			rb_lambda = GET_NEXT_ARG(ap);
-			lambda = NUM2DBL(rb_lambda); 
-			/* lambda > 0 */
-			CHECK_POSITIVE(lambda);
+			rb_mean = GET_NEXT_ARG(ap);
+			mean = NUM2DBL(rb_mean); 
+			/* mean > 0 */
+			CHECK_POSITIVE(mean);;
 			
-			/* lambda parameter correct */
+			/* mean parameter correct */
 			RANDVAR_INIT(poisson);
-			SET_PARAM(poisson, lambda);
+			SET_PARAM(poisson, mean);;
 		CASE_END
 	
 		CASE(rayleigh)
@@ -584,17 +584,25 @@ VALUE rb_outcomes(VALUE rb_obj, VALUE rb_nr_times)
 /******************************************************************************/
 #define CREATE_RANDOM_VARIABLE_CLASS(rb_name, name)			\
 	do {								\
-		VALUE *rb_objp = &rb_cRandomVariables[rv_type_ ##name]; \
+		VALUE *rb_objp;						\
+		VALUE rb_metaclass;					\
+									\
+		rb_objp = &rb_cRandomVariables[rv_type_ ##name]; 	\
 									\
 		*rb_objp = rb_define_class_under(rb_mRandomVariable,	\
 			rb_name, rb_cRandomVariables[rv_type_generic]);	\
 									\
-		rb_define_singleton_method(*rb_objp, "new", 		\
+		rb_metaclass = rb_singleton_class(*rb_objp);		\
+									\
+		rb_define_private_method(rb_metaclass, "intern_new", 	\
 			(VALUE (*) (ANYARGS)) rb_create_instance,	\
 			rv_ ##name ##_nr_params);			\
 									\
 		rb_define_method(*rb_objp, "outcome" , rb_outcome,  0);	\
+		rb_define_alias(*rb_objp, "sample", "outcome");		\
+									\
 		rb_define_method(*rb_objp, "outcomes", rb_outcomes, 1);	\
+		rb_define_alias(*rb_objp, "samples", "outcomes");	\
 		outcome_func[rv_type_ ##name] = 			\
 				randvar_ ##name ##_rb_outcome;		\
 	} while (0)

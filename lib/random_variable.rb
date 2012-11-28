@@ -68,22 +68,29 @@ module RandomVariable
 		end
 	end
 
+	# obtain a single outcome from the random variable
 	def outcome
 		@blk.call
 	end
+	alias :sample :outcome
 
-	def outcomes(times)
+	# obtain +number+ outcomes from the random variable
+	def outcomes(number)
 		ary = []
-		times.times do
+		number.times do
 			ary << @blk.call
 		end
 		ary	
 	end
+	alias :samples :outcomes
 	
 
 end
 end
 
+require_relative 'distros.rb'
+
+=begin
 module Math
 
 	functions = [:acos, :acosh, :asin, :asinh, :atan, :atanh, :cbrt,
@@ -105,5 +112,6 @@ module Math
 	end
 
 end
+=end
 
 

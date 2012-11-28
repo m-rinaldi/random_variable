@@ -1,4 +1,4 @@
-version = '1.0.0'
+version = '1.0.1'
 date = Time.now; date = "%d-%02d-%02d" % [date.year, date.month, date.day]
 
 Gem::Specification.new do |s|
@@ -15,16 +15,14 @@ Gem::Specification.new do |s|
 	s.homepage	=	'http://mrinaldi.net/random_variable'	
 
 
-	#s.required_ruby_version = '>= 1.9.1'
+	s.required_ruby_version = '>= 1.9.3'
 	
 	s.extensions << 'lib/ext/extconf.rb'
-	
+
+	s.files << 'lib/distros.rb'	
 	s.files << 'LICENSE'
 	s.files << 'COPYING'
 
-	# more files in the lib directory
-	s.files << 'lib/test.rb'
-	
 	# more files in the lib/ext directory
 	s.files << 'lib/ext/extconf.rb'
 	s.files << 'lib/ext/random_variable.c'
@@ -35,7 +33,5 @@ Gem::Specification.new do |s|
 	s.files << 'lib/ext/linpack.c'
 	s.files << 'lib/ext/com.c'
 
-	# more files in the lib/test directory
-	s.files << 'lib/test/test_poisson_rv.rb'
 end
 
