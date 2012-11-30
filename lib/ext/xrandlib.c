@@ -50,7 +50,7 @@ int gen_bernoulli(double p)
 /* Rayleigh */
 double gen_rayleigh(double sigma)
 {
-	return sqrt( -2 * sigma * sigma * log(1.0 - ranf()) );
+	return sigma * sqrt(-2 * log(1.0 - ranf()));
 }
 
 /* Arcsine */
