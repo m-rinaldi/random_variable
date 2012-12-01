@@ -1,20 +1,16 @@
 ////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 // File:     random_variable.c                                                //
 //                                                                            //
-////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 // Author:   Jorge F.M. Rinaldi                                               //
 // Contact:  jorge.madronal.rinaldi@gmail.com                                 //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 // Date:     2012/10/11                                                       //
 //                                                                            //
-////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
 /*******************************************************************************
@@ -59,6 +55,7 @@
 #error "No limits.h header found"
 #endif /* HAVE_LIMITS_H */
 
+#include "gen.h"
 #include "randlib.h"
 #include "xrandlib.h"
 
@@ -579,6 +576,17 @@ VALUE rb_outcomes(VALUE rb_obj, VALUE rb_nr_times)
 }
 #undef GET_DATA
 
+static VALUE rb_seed(VALUE self)
+{
+	return rv_gen_get_seed();
+}
+
+static VALUE rb_seed_assign(VALUE self, VALUE rb_seed)
+{
+	rv_gen_set_seed(rb_seed);
+	return rb_seed;
+}
+
 /******************************************************************************/
 /* macros for the extension entry point */
 /******************************************************************************/
@@ -614,6 +622,11 @@ void Init_random_variable(void)
 {
 	/* the RandomVariable module */
 	rb_mRandomVariable = rb_define_module("RandomVariable");
+	rb_define_singleton_method(rb_mRandomVariable, "seed",
+							rb_seed, 0);
+	rb_define_singleton_method(rb_mRandomVariable, "seed=",
+							rb_seed_assign, 1);
+
 	/* Generic */
 	rb_cRandomVariables[rv_type_generic] = 
 		rb_define_class_under(rb_mRandomVariable, 
@@ -628,6 +641,9 @@ void Init_random_variable(void)
 	CREATE_RANDOM_VARIABLE_CLASS("Normal", normal);
 	CREATE_RANDOM_VARIABLE_CLASS("Poisson", poisson);
 	CREATE_RANDOM_VARIABLE_CLASS("Rayleigh", rayleigh);
+
+	/* initialize the random number generator */
+	rv_init_gen();
 }
 #undef CREATE_RANDOM_VARIABLE_CLASS
 

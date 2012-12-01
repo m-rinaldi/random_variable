@@ -1,4 +1,5 @@
 #include "randlib.h"
+#include "gen.h"
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
@@ -1597,6 +1598,7 @@ extern long lennob(char *str);
 #endif
 }
 
+#if 0
 double ranf(void)
 /*
 **********************************************************************
@@ -1622,6 +1624,7 @@ static double ranf;
     ranf = ignlgi()*4.65661305739177E-10;
     return ranf;
 }
+#endif 
 
 void setgmn(double *meanv,double *covm,long p,double *parm)
 /*

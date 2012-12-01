@@ -14,7 +14,7 @@
 ################################################################################
 
 module RandomVariable
-	class Bernoulli
+	class Bernoulli < Generic
 		# create a new <i>Bernoulli Random Variable</i> with 
 		# parameter +p+
 		def self.new(p)
@@ -22,7 +22,7 @@ module RandomVariable
 		end
 	end
 
-	class Beta
+	class Beta < Generic
 		# create a new <i>Beta Random Variable</i> with parameters 
 		# +alpha+ and +beta+
 		def self.new(alpha, beta)
@@ -30,7 +30,7 @@ module RandomVariable
 		end
 	end
 
-	class Binomial
+	class Binomial < Generic
 		# create a new <i>Binomial Random Variable</i> with parameters 
 		# +n+ and +p+
 		def self.new(n, p)
@@ -38,7 +38,7 @@ module RandomVariable
 		end
 	end
 
-	class ContinuousUniform
+	class ContinuousUniform < Generic
 		# create a new <i>Continuous Uniform Random Variable</i> with 
 		# parameters +a+ and +b+
 		def self.new(a, b)
@@ -46,7 +46,7 @@ module RandomVariable
 		end	
 	end
 
-	class DiscreteUniform
+	class DiscreteUniform < Generic
 		# create a new <i>Discrete Uniform Random Variable</i> with 
 		# parameters +a+ and +b+
 		def self.new(a, b)
@@ -54,7 +54,7 @@ module RandomVariable
 		end
 	end
 
-	class Exponential
+	class Exponential < Generic
 		# create a new <i>Exponential Random Variable</i> with a mean of
 		# +mean+
 		def self.new(mean)
@@ -62,7 +62,7 @@ module RandomVariable
 		end
 	end
 
-	class F
+	class F < Generic
 		# create a new <i>F Random Variable</i> with parameters 
 		# +d1+ and +d2+
 		def self.new(d1, d2)
@@ -70,7 +70,7 @@ module RandomVariable
 		end
 	end
 
-	class Normal
+	class Normal < Generic
 		# create a new <i>Normal Random Variable</i> with parameters
 		# +mu+ and +sigma+
 		def self.new(mu = 0.0, sigma = 1.0)
@@ -78,7 +78,7 @@ module RandomVariable
 		end
 	end
 
-	class Poisson
+	class Poisson < Generic
 		# create a new <i>Poisson Random Variable</i> with a mean of
 		# +mean+
 		def self.new(mean)
@@ -86,7 +86,7 @@ module RandomVariable
 		end
 	end
 
-	class Rayleigh	
+	class Rayleigh < Generic
 		# create a new <i>Rayleigh Random Variable</i> with parameter
 		# +sigma+
 		def self.new(sigma)
