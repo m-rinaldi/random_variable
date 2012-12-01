@@ -1,4 +1,4 @@
-version = '1.0.1'
+version = '1.1.0'
 date = Time.now; date = "%d-%02d-%02d" % [date.year, date.month, date.day]
 
 Gem::Specification.new do |s|
@@ -26,6 +26,8 @@ Gem::Specification.new do |s|
 	# more files in the lib/ext directory
 	s.files << 'lib/ext/extconf.rb'
 	s.files << 'lib/ext/random_variable.c'
+	s.files << 'lib/ext/gen.c'
+	s.files << 'lib/ext/gen.h'
 	s.files << 'lib/ext/randlib.c'
 	s.files << 'lib/ext/randlib.h'
 	s.files << 'lib/ext/xrandlib.c'

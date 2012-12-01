@@ -34,6 +34,24 @@
 require_relative 'ext/random_variable'
 
 module RandomVariable 
+	# obtain the current seed in use
+	#
+	# @return [Numeric] the current seed
+	def self.seed
+		Generator::seed
+	end
+
+	# set and reset the seed to a new seed
+	#
+	# @param [Numeric] new_seed new seed
+	# @return [Numeric] the new just set seed
+	def self.seed=(new_seed)
+		Generator::seed = new_seed
+	end
+	
+	# obtain a list of the different available random variable class
+	# objects
+	# @return [Array] list of random variable class objects
 	def self.list
 		distros = []
 		self.constants.each do |c|
@@ -46,46 +64,44 @@ module RandomVariable
 	end
 	
 	class Generic	
-	klass = self
+		klass = self
 
-	def initialize(&blk)
-		@blk = blk
-	end
+		def initialize(&blk)
+			@blk = blk
+		end
 
 
-	operators = %w(+ - * / % **)
+		operators = %w(+ - * / % **)
 
-	operators.each do |operator|
-		define_method(operator) do |arg|
-			if arg.is_a? klass then
-				return klass.new {
-					self.outcome.send(operator, arg.outcome) 
-				}
+		operators.each do |op|
+			define_method(op) do |arg|
+				if arg.is_a? klass then
+					return klass.new {
+						self.outcome.send(op,
+								arg.outcome) 
+						}
+				end
+				klass.new { self.outcome.send(op, arg) }
 			end
-			klass.new { 
-				self.outcome.send(operator, arg) 
-			}
 		end
-	end
 
-	# obtain a single outcome from the random variable
-	def outcome
-		@blk.call
-	end
-	alias :sample :outcome
-
-	# obtain +number+ outcomes from the random variable
-	def outcomes(number)
-		ary = []
-		number.times do
-			ary << @blk.call
+		# obtain a single outcome from the random variable
+		def outcome
+			@blk.call
 		end
-		ary	
-	end
-	alias :samples :outcomes
+		alias :sample :outcome
+
+		# obtain +number+ outcomes from the random variable
+		def outcomes(number)
+			ary = []
+			number.times do
+				ary << @blk.call
+			end
+			ary	
+		end
+		alias :samples :outcomes
 	
-
-end
+	end
 end
 
 require_relative 'distros.rb'

@@ -203,6 +203,7 @@ CREATE_RANDVAR_RB_OUTCOME(rayleigh, DBL2NUM)
 /******************************************************************************/
 /* class and module objects */
 static VALUE rb_mRandomVariable;
+static VALUE rb_mGenerator;
 static VALUE rb_cRandomVariables[NR_RANDOM_VARIABLES];
 /******************************************************************************/
 
@@ -576,12 +577,12 @@ VALUE rb_outcomes(VALUE rb_obj, VALUE rb_nr_times)
 }
 #undef GET_DATA
 
-static VALUE rb_seed(VALUE self)
+static VALUE rb_seed_get(VALUE self)
 {
 	return rv_gen_get_seed();
 }
 
-static VALUE rb_seed_assign(VALUE self, VALUE rb_seed)
+static VALUE rb_seed_set(VALUE self, VALUE rb_seed)
 {
 	rv_gen_set_seed(rb_seed);
 	return rb_seed;
@@ -622,15 +623,17 @@ void Init_random_variable(void)
 {
 	/* the RandomVariable module */
 	rb_mRandomVariable = rb_define_module("RandomVariable");
-	rb_define_singleton_method(rb_mRandomVariable, "seed",
-							rb_seed, 0);
-	rb_define_singleton_method(rb_mRandomVariable, "seed=",
-							rb_seed_assign, 1);
+
+	/* Generator */
+	rb_mGenerator = rb_define_module_under(rb_mRandomVariable, "Generator");
+	rb_define_singleton_method(rb_mGenerator, "seed", rb_seed_get, 0);
+	rb_define_singleton_method(rb_mGenerator, "seed=", rb_seed_set, 1);
 
 	/* Generic */
 	rb_cRandomVariables[rv_type_generic] = 
 		rb_define_class_under(rb_mRandomVariable, 
 						"Generic", rb_cObject);
+	/* random distributions */
 	CREATE_RANDOM_VARIABLE_CLASS("Bernoulli", bernoulli);
 	CREATE_RANDOM_VARIABLE_CLASS("Beta", beta);
 	CREATE_RANDOM_VARIABLE_CLASS("Binomial", binomial);
