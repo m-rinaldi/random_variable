@@ -46,4 +46,16 @@ module RandomVariable::Samples
 		end
 		acc / self.size
 	end
+
+	def median
+		return nil if 0 == self.size
+		return self[0] if 1 == self.size
+		ary = self.sort
+		i = ary.len / 2
+		if ary.len.even? then
+			return (ary[i] + ary[i-1]) / 2.0
+		else
+			return ary[i]
+		end
+	end
 end
