@@ -9,6 +9,7 @@ To date, the supported random distributions are:
 - Bernoulli
 - Beta
 - Binomial
+- Chi-Squared
 - Continuous Uniform
 - Discrete Uniform
 - Exponential

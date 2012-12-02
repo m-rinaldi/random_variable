@@ -68,6 +68,7 @@ typedef enum {
 	rv_type_bernoulli,
 	rv_type_beta,
 	rv_type_binomial,
+	rv_type_chi_squared,
 	rv_type_continuous_uniform,
 	rv_type_discrete_uniform,
 	rv_type_exponential,
@@ -92,6 +93,7 @@ typedef struct {
 		struct { double p; } bernoulli;
 		struct { double alpha, beta; } beta;
 		struct { long n; double p; } binomial;
+		struct { long k; } chi_squared;
 		struct { double a,b; } continuous_uniform;
 		struct { long a,b; } discrete_uniform;
 		struct { double mean; } exponential;
@@ -160,6 +162,11 @@ CREATE_RANDVAR_ACCESSOR(binomial, n, long)
 CREATE_RANDVAR_ACCESSOR(binomial, p, double)
 CREATE_RANDVAR_OUTCOME_FUNC2(binomial, ignbin, long, n, p)
 CREATE_RANDVAR_RB_OUTCOME(binomial, LONG2NUM)
+/* chi-squared */
+RV_NR_PARAMS(chi_squared, 1)
+CREATE_RANDVAR_ACCESSOR(chi_squared, k, long)
+CREATE_RANDVAR_OUTCOME_FUNC1(chi_squared, gen_chi_squared, double, k)
+CREATE_RANDVAR_RB_OUTCOME(chi_squared, DBL2NUM)
 /* continuous uniform */
 RV_NR_PARAMS(continuous_uniform, 2)
 CREATE_RANDVAR_ACCESSOR(continuous_uniform, a, double)
@@ -275,6 +282,15 @@ static type_t type(VALUE rb_obj)
 				VALUE klass = 0;
 #define SET_KLASS(name)							\
 		(klass = rb_cRandomVariables[rv_type_ ##name])
+
+#define ASSERT_KLASS_IS_SET						\
+		do {							\
+			if (0 == klass) 				\
+				rb_bug("forgot to set klass variable "	\
+					"in %s()", __func__);		\
+		} while (0)						
+
+
 #define GET_NEXT_ARG(ap)	va_arg((ap), VALUE)
 #define CREATE_WRAPPING(rv)	Data_Wrap_Struct(klass, NULL, xfree, (rv))
 
@@ -294,6 +310,7 @@ static type_t type(VALUE rb_obj)
 			{		
 
 #define CASE_END							\
+			ASSERT_KLASS_IS_SET;				\
 			break;						\
 			}	
 /******************************************************************************/
@@ -373,6 +390,25 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 			RANDVAR_INIT(binomial);
 			SET_PARAM(binomial, n);
 			SET_PARAM(binomial, p);
+		CASE_END
+
+		CASE(chi_squared)
+			VALUE rb_k;
+			long k;
+
+			SET_KLASS(chi_squared);
+
+			rb_k = GET_NEXT_ARG(ap);
+			CHECK_RB_INTEGER(rb_k, "k");
+
+			k = NUM2LONG(rb_k);
+			
+			/* k > 0 */
+			CHECK_POSITIVE(k);
+
+			/* k parameter correct */
+			RANDVAR_INIT(chi_squared);
+			SET_PARAM(chi_squared, k);	
 		CASE_END
 
 		CASE(continuous_uniform)
@@ -637,6 +673,7 @@ void Init_random_variable(void)
 	CREATE_RANDOM_VARIABLE_CLASS("Bernoulli", bernoulli);
 	CREATE_RANDOM_VARIABLE_CLASS("Beta", beta);
 	CREATE_RANDOM_VARIABLE_CLASS("Binomial", binomial);
+	CREATE_RANDOM_VARIABLE_CLASS("ChiSquared", chi_squared);
 	CREATE_RANDOM_VARIABLE_CLASS("ContinuousUniform", continuous_uniform);
 	CREATE_RANDOM_VARIABLE_CLASS("DiscreteUniform", discrete_uniform);
 	CREATE_RANDOM_VARIABLE_CLASS("Exponential", exponential);

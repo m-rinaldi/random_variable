@@ -18,6 +18,7 @@
 #define _XRANDLIB_H_
 
 extern int gen_bernoulli(double);
+extern double gen_chi_squared(long);
 extern double gen_exponential(double);
 extern double gen_rayleigh(double);
 

@@ -48,6 +48,12 @@ int gen_bernoulli(double p)
 	return 1;
 }
 
+/* Chi-Squared */
+double gen_chi_squared(long k)
+{
+	return genchi((double) k);
+}
+
 /* Rayleigh */
 double gen_rayleigh(double sigma)
 {
