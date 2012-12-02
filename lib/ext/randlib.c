@@ -1060,6 +1060,11 @@ S170:
 }
 
 long ignnbn(long n,double p)
+/* 
+	return the number of failures
+	n -> number of successful events
+	p -> probability of event
+ */
 /*
 **********************************************************************
  

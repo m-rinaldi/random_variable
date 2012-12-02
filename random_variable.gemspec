@@ -19,6 +19,8 @@ Gem::Specification.new do |s|
 	
 	s.extensions << 'lib/ext/extconf.rb'
 
+	s.files << 'lib/samples.rb'	
+	s.files << 'lib/sampleable.rb'	
 	s.files << 'lib/distros.rb'	
 	s.files << 'LICENSE'
 	s.files << 'COPYING'

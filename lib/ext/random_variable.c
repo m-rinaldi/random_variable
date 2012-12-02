@@ -73,6 +73,7 @@ typedef enum {
 	rv_type_discrete_uniform,
 	rv_type_exponential,
 	rv_type_f,
+	rv_type_negative_binomial,
 	rv_type_normal,
 	rv_type_poisson,
 	rv_type_rayleigh,
@@ -98,6 +99,7 @@ typedef struct {
 		struct { long a,b; } discrete_uniform;
 		struct { double mean; } exponential;
 		struct { double d1, d2; } f;
+		struct { long r; double p; } negative_binomial;
 		struct { double mu, sigma; } normal;
 		struct { double mean; } poisson;
 		struct { double sigma; } rayleigh;
@@ -190,6 +192,12 @@ CREATE_RANDVAR_ACCESSOR(f, d1, double)
 CREATE_RANDVAR_ACCESSOR(f, d2, double)
 CREATE_RANDVAR_OUTCOME_FUNC2(f, genf, double, d1, d2)
 CREATE_RANDVAR_RB_OUTCOME(f, DBL2NUM)
+/* negative binomial */
+RV_NR_PARAMS(negative_binomial, 2)
+CREATE_RANDVAR_ACCESSOR(negative_binomial, r, long)
+CREATE_RANDVAR_ACCESSOR(negative_binomial, p, double)
+CREATE_RANDVAR_OUTCOME_FUNC2(negative_binomial, ignnbn, long, r, p)
+CREATE_RANDVAR_RB_OUTCOME(negative_binomial, LONG2NUM)
 /* normal */
 RV_NR_PARAMS(normal, 2)
 CREATE_RANDVAR_ACCESSOR(normal, mu, double)
@@ -274,6 +282,15 @@ static type_t type(VALUE rb_obj)
 						#x " parameter "	\
 						"is not a "		\
 						"probability");		\
+			} while (0)
+	
+#define CHECK_PROBABILITY_EXCL(x) 					\
+			do {						\
+				if (x >= 1.0 || x <= 0.0)		\
+					rb_raise(rb_eArgError,		\
+						#x " parameter "	\
+						"must be "		\
+						"0 < " #x " < 1");	\
 			} while (0)	
 
 #define VAR_DECLARATIONS	va_list ap;				\
@@ -496,6 +513,34 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 			SET_PARAM(f, d2);
 		CASE_END
 
+		CASE(negative_binomial)
+			VALUE rb_r, rb_p;
+			long r;
+			double p;
+
+			SET_KLASS(negative_binomial);
+
+			rb_r = GET_NEXT_ARG(ap);
+			rb_p = GET_NEXT_ARG(ap);
+
+			CHECK_RB_INTEGER(rb_r, "r");
+			
+			r = NUM2LONG(rb_r);
+			p = NUM2DBL(rb_p);
+
+			/* r > 0 */
+			CHECK_POSITIVE(r);
+			/* 0 < p < 0 */
+			CHECK_PROBABILITY_EXCL(p);
+
+			/* r and p parameters correct */
+			RANDVAR_INIT(negative_binomial);
+			SET_PARAM(negative_binomial, r);
+			SET_PARAM(negative_binomial, p);
+
+			
+		CASE_END		
+
 		CASE(normal)
 			VALUE rb_mu, rb_sigma;
 			double mu, sigma;
@@ -643,11 +688,12 @@ static VALUE rb_seed_set(VALUE self, VALUE rb_seed)
 			(VALUE (*) (ANYARGS)) rb_create_instance,	\
 			rv_ ##name ##_nr_params);			\
 									\
-		rb_define_method(*rb_objp, "outcome" , rb_outcome,  0);	\
-		rb_define_alias(*rb_objp, "sample", "outcome");		\
+		rb_define_private_method(*rb_objp, 			\
+			"intern_outcome", rb_outcome, 0);		\
 									\
-		rb_define_method(*rb_objp, "outcomes", rb_outcomes, 1);	\
-		rb_define_alias(*rb_objp, "samples", "outcomes");	\
+		rb_define_private_method(*rb_objp,			\
+			"intern_outcomes", rb_outcomes, 1);		\
+									\
 		outcome_func[rv_type_ ##name] = 			\
 				randvar_ ##name ##_rb_outcome;		\
 	} while (0)
@@ -678,6 +724,7 @@ void Init_random_variable(void)
 	CREATE_RANDOM_VARIABLE_CLASS("DiscreteUniform", discrete_uniform);
 	CREATE_RANDOM_VARIABLE_CLASS("Exponential", exponential);
 	CREATE_RANDOM_VARIABLE_CLASS("F", f);
+	CREATE_RANDOM_VARIABLE_CLASS("NegativeBinomial", negative_binomial);
 	CREATE_RANDOM_VARIABLE_CLASS("Normal", normal);
 	CREATE_RANDOM_VARIABLE_CLASS("Poisson", poisson);
 	CREATE_RANDOM_VARIABLE_CLASS("Rayleigh", rayleigh);

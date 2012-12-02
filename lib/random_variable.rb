@@ -32,6 +32,7 @@
 =end
 
 require_relative 'ext/random_variable'
+require_relative 'sampleable'
 
 module RandomVariable 
 	# obtain the current seed in use
@@ -63,13 +64,33 @@ module RandomVariable
 		distros
 	end
 	
-	class Generic	
+	class Generic
+		include Sampleable
+
 		klass = self
 
 		def initialize(&blk)
 			@blk = blk
-		end
+			
+			class << self
+				def outcome
+					@blk.call
+				end
+				alias :sample :outcome
 
+				def outcomes(nr_samples)
+					ary = []
+					nr_samples.times do
+						ary << @blk.call
+					end
+					class << ary
+						include RandomVariable::Samples
+					end
+					ary
+				end
+				alias :samples :outcomes
+			end
+		end
 
 		operators = %w(+ - * / % **)
 
@@ -85,22 +106,6 @@ module RandomVariable
 			end
 		end
 
-		# obtain a single outcome from the random variable
-		def outcome
-			@blk.call
-		end
-		alias :sample :outcome
-
-		# obtain +number+ outcomes from the random variable
-		def outcomes(number)
-			ary = []
-			number.times do
-				ary << @blk.call
-			end
-			ary	
-		end
-		alias :samples :outcomes
-	
 	end
 end
 
