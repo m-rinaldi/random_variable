@@ -76,6 +76,7 @@ typedef enum {
 	rv_type_negative_binomial,
 	rv_type_normal,
 	rv_type_poisson,
+	rv_type_rademacher,
 	rv_type_rayleigh,
 
 	/* end of random variable types */	
@@ -102,6 +103,7 @@ typedef struct {
 		struct { long r; double p; } negative_binomial;
 		struct { double mu, sigma; } normal;
 		struct { double mean; } poisson;
+		struct { } rademacher;
 		struct { double sigma; } rayleigh;
 	} RANDVAR_DATA;	/* union */
 } randvar_t;
@@ -120,6 +122,13 @@ typedef struct {
 	randvar_##name ##_set_ ##param(randvar_t *rv, type param)	\
 	{								\
 		rv->RANDVAR_DATA . name . param = param;		\
+	}
+
+#define CREATE_RANDVAR_OUTCOME_FUNC0(name, func, type)			\
+	static inline type 						\
+	randvar_##name ##_ ##outcome(randvar_t *rv)			\
+	{								\
+		return func();						\
 	}
 
 #define CREATE_RANDVAR_OUTCOME_FUNC1(name, func, type, param)		\
@@ -209,6 +218,10 @@ RV_NR_PARAMS(poisson, 1)
 CREATE_RANDVAR_ACCESSOR(poisson, mean, double)
 CREATE_RANDVAR_OUTCOME_FUNC1(poisson, ignpoi, long, mean)
 CREATE_RANDVAR_RB_OUTCOME(poisson, LONG2NUM)
+/* rademacher */
+RV_NR_PARAMS(rademacher, 0)
+CREATE_RANDVAR_OUTCOME_FUNC0(rademacher, gen_rademacher, int)
+CREATE_RANDVAR_RB_OUTCOME(rademacher, INT2FIX)
 /* rayleigh */
 RV_NR_PARAMS(rayleigh, 1)
 CREATE_RANDVAR_ACCESSOR(rayleigh, sigma, double)
@@ -576,6 +589,12 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 			RANDVAR_INIT(poisson);
 			SET_PARAM(poisson, mean);;
 		CASE_END
+
+		CASE(rademacher)
+			SET_KLASS(rademacher);
+
+			RANDVAR_INIT(rademacher);
+		CASE_END
 	
 		CASE(rayleigh)
 			VALUE rb_sigma;
@@ -727,6 +746,7 @@ void Init_random_variable(void)
 	CREATE_RANDOM_VARIABLE_CLASS("NegativeBinomial", negative_binomial);
 	CREATE_RANDOM_VARIABLE_CLASS("Normal", normal);
 	CREATE_RANDOM_VARIABLE_CLASS("Poisson", poisson);
+	CREATE_RANDOM_VARIABLE_CLASS("Rademacher", rademacher);
 	CREATE_RANDOM_VARIABLE_CLASS("Rayleigh", rayleigh);
 
 	/* initialize the random number generator */

@@ -17,9 +17,10 @@
 #ifndef _XRANDLIB_H_
 #define _XRANDLIB_H_
 
-extern int gen_bernoulli(double);
-extern double gen_chi_squared(long);
-extern double gen_exponential(double);
-extern double gen_rayleigh(double);
+extern int 	gen_bernoulli(double);
+extern double 	gen_chi_squared(long);
+extern double 	gen_exponential(double);
+extern int 	gen_rademacher(void);
+extern double 	gen_rayleigh(double);
 
 #endif /* _XRANDLIB_H_ */

@@ -86,6 +86,13 @@ module RandomVariable
 		end
 	end
 
+	class Rademacher < Generic
+		# create a new <i>Rademacher Random Variable</i>
+		def self.new
+			intern_new
+		end
+	end
+
 	class Rayleigh < Generic
 		# create a new <i>Rayleigh Random Variable</i> with parameter
 		# +sigma+

@@ -54,11 +54,20 @@ double gen_chi_squared(long k)
 	return genchi((double) k);
 }
 
+/* Rademacher */
+int gen_rademacher(void)
+{
+	if (ranf() <= 0.5)
+		return -1;
+	return 1;	
+}
+
 /* Rayleigh */
 double gen_rayleigh(double sigma)
 {
 	return sigma * sqrt(-2 * log(1.0 - ranf()));
 }
+
 
 /* Arcsine */
 double gen_arcsine(void)
