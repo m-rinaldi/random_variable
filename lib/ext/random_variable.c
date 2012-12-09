@@ -188,7 +188,7 @@ CREATE_RANDVAR_RB_OUTCOME(continuous_uniform, DBL2NUM)
 RV_NR_PARAMS(discrete_uniform, 2)
 CREATE_RANDVAR_ACCESSOR(discrete_uniform, a, long)
 CREATE_RANDVAR_ACCESSOR(discrete_uniform, b, long)
-CREATE_RANDVAR_OUTCOME_FUNC2(discrete_uniform, ignuin, long, a, b)
+CREATE_RANDVAR_OUTCOME_FUNC2(discrete_uniform, gen_discrete_uniform, long, a, b)
 CREATE_RANDVAR_RB_OUTCOME(discrete_uniform, LONG2NUM)
 /* exponential */
 RV_NR_PARAMS(exponential, 1)

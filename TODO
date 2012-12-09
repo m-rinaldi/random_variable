@@ -1,3 +1,2 @@
 - Add the "params" method
 - Update the tests
-- Fix the discrete uniform distribution issue related to the seed

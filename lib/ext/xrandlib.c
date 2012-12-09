@@ -54,6 +54,31 @@ double gen_chi_squared(long k)
 	return genchi((double) k);
 }
 
+/* Discrete Uniform */
+long gen_discrete_uniform(long a, long b)
+{
+	/* assumptions:
+		1) a != b
+		2) a < b
+	*/
+	double step;
+	long step_nr;
+	double y, y0;
+
+	step = 1.0 / (b - a + 1);
+	y = step;
+	y0 = ranf();
+	step_nr = 0;
+
+	do {
+		if (y0 <= y)
+			break;
+		y += step;
+		++step_nr;	
+	} while (1);
+	return a + step_nr;	
+}
+
 /* Rademacher */
 int gen_rademacher(void)
 {
