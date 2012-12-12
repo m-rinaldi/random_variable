@@ -21,6 +21,7 @@ extern int 	gen_bernoulli(double);
 extern double 	gen_chi_squared(long);
 extern long	gen_discrete_uniform(long a, long b);
 extern double 	gen_exponential(double);
+extern double	gen_pareto(double, double);
 extern int 	gen_rademacher(void);
 extern double 	gen_rayleigh(double);
 

@@ -40,6 +40,18 @@
 #include "xrandlib.h"
 #include "randlib.h"
 
+/* Arcsine */
+double gen_arcsine(void)
+{
+	return pow(sin(M_2_PI * ranf() ), 2);
+}
+
+/* Bates */
+double gen_bates(long n)
+{
+	return genirwinhall(n) / n;
+}
+
 /* Bernoulli */
 int gen_bernoulli(double p)
 {
@@ -79,6 +91,16 @@ long gen_discrete_uniform(long a, long b)
 	return a + step_nr;	
 }
 
+/* Irwin-Hall */
+double gen_irwin_hall(long n)
+{
+	long i;
+	double sum;
+	for (i = 0, sum = 0; i < n; i++)
+		sum += ranf();
+	return sum;	
+}
+
 /* Rademacher */
 int gen_rademacher(void)
 {
@@ -93,33 +115,16 @@ double gen_rayleigh(double sigma)
 	return sigma * sqrt(-2 * log(1.0 - ranf()));
 }
 
-
-/* Arcsine */
-double gen_arcsine(void)
+/* Pareto */
+double gen_pareto(double a, double m)
 {
-	return pow(sin(M_2_PI * ranf() ), 2);
+	return m * pow(1 - ranf(), 1.0 / a);
 }
 
 /* Rectangular */
 double gen_rectangular(void)
 {
 	return (ranf() - 0.5);	
-}
-
-/* Irwin-Hall */
-double gen_irwin_hall(long n)
-{
-	long i;
-	double sum;
-	for (i = 0, sum = 0; i < n; i++)
-		sum += ranf();
-	return sum;	
-}
-
-/* Bates */
-double gen_bates(long n)
-{
-	return genirwinhall(n) / n;
 }
 
 /* Triangular */

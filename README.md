@@ -15,7 +15,9 @@ To date, the supported random distributions are:
 - Exponential
 - F
 - Normal
+- Pareto
 - Poisson
+- Rademacher
 - Rayleigh
 
 and more distributions are on the way.

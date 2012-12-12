@@ -75,6 +75,7 @@ typedef enum {
 	rv_type_f,
 	rv_type_negative_binomial,
 	rv_type_normal,
+	rv_type_pareto,
 	rv_type_poisson,
 	rv_type_rademacher,
 	rv_type_rayleigh,
@@ -102,6 +103,7 @@ typedef struct {
 		struct { double d1, d2; } f;
 		struct { long r; double p; } negative_binomial;
 		struct { double mu, sigma; } normal;
+		struct { double a, m; } pareto;
 		struct { double mean; } poisson;
 		struct { } rademacher;
 		struct { double sigma; } rayleigh;
@@ -213,6 +215,12 @@ CREATE_RANDVAR_ACCESSOR(normal, mu, double)
 CREATE_RANDVAR_ACCESSOR(normal, sigma, double)
 CREATE_RANDVAR_OUTCOME_FUNC2(normal, gennor, double, mu, sigma)
 CREATE_RANDVAR_RB_OUTCOME(normal, DBL2NUM)
+/* pareto */
+RV_NR_PARAMS(pareto, 2)
+CREATE_RANDVAR_ACCESSOR(pareto, a, double)
+CREATE_RANDVAR_ACCESSOR(pareto, m, double)
+CREATE_RANDVAR_OUTCOME_FUNC2(pareto, gen_pareto, double, a, m)
+CREATE_RANDVAR_RB_OUTCOME(pareto, DBL2NUM)
 /* poisson */
 RV_NR_PARAMS(poisson, 1)
 CREATE_RANDVAR_ACCESSOR(poisson, mean, double)
@@ -572,6 +580,30 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 			RANDVAR_INIT(normal);
 			SET_PARAM(normal, mu);
 			SET_PARAM(normal, sigma);
+		CASE_END
+
+		CASE(pareto)
+			VALUE rb_a, rb_m;
+			double a, m;
+			
+			SET_KLASS(pareto);
+
+			rb_a = GET_NEXT_ARG(ap);
+			rb_m = GET_NEXT_ARG(ap);
+
+			a = NUM2DBL(rb_a);
+			m = NUM2DBL(rb_m);
+
+			/* a > 0 */
+			CHECK_POSITIVE(a);
+
+			/* m > 0 */
+			CHECK_POSITIVE(m);
+
+			/* a and m parameters correct */
+			RANDVAR_INIT(pareto);
+			SET_PARAM(pareto, a);
+			SET_PARAM(pareto, m);
 		CASE_END		
 
 		CASE(poisson)
@@ -583,11 +615,11 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 			rb_mean = GET_NEXT_ARG(ap);
 			mean = NUM2DBL(rb_mean); 
 			/* mean > 0 */
-			CHECK_POSITIVE(mean);;
+			CHECK_POSITIVE(mean);
 			
 			/* mean parameter correct */
 			RANDVAR_INIT(poisson);
-			SET_PARAM(poisson, mean);;
+			SET_PARAM(poisson, mean);
 		CASE_END
 
 		CASE(rademacher)
@@ -745,6 +777,7 @@ void Init_random_variable(void)
 	CREATE_RANDOM_VARIABLE_CLASS("F", f);
 	CREATE_RANDOM_VARIABLE_CLASS("NegativeBinomial", negative_binomial);
 	CREATE_RANDOM_VARIABLE_CLASS("Normal", normal);
+	CREATE_RANDOM_VARIABLE_CLASS("Pareto", pareto);
 	CREATE_RANDOM_VARIABLE_CLASS("Poisson", poisson);
 	CREATE_RANDOM_VARIABLE_CLASS("Rademacher", rademacher);
 	CREATE_RANDOM_VARIABLE_CLASS("Rayleigh", rayleigh);

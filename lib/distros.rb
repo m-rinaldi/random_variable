@@ -78,6 +78,14 @@ module RandomVariable
 		end
 	end
 
+	class Pareto < Generic
+		# create a new <i>Pareto Random Variable</i> where +a+ is the
+		# shape and +m+ is the location
+		def self.new(a, m = 1.0)
+			intern_new(a, m)
+		end
+	end
+
 	class Poisson < Generic
 		# create a new <i>Poisson Random Variable</i> with a mean of
 		# +mean+
