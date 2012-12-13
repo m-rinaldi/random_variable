@@ -108,4 +108,11 @@ module RandomVariable
 			intern_new(sigma)
 		end
 	end
+
+	class Rectangular < Generic
+		# create a <i>Rectangular Random Variable</i>
+		def self.new
+			intern_new
+		end
+	end
 end

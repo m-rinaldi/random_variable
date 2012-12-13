@@ -79,6 +79,7 @@ typedef enum {
 	rv_type_poisson,
 	rv_type_rademacher,
 	rv_type_rayleigh,
+	rv_type_rectangular,
 
 	/* end of random variable types */	
 
@@ -105,8 +106,9 @@ typedef struct {
 		struct { double mu, sigma; } normal;
 		struct { double a, m; } pareto;
 		struct { double mean; } poisson;
-		struct { } rademacher;
+		struct { /* no params */ } rademacher;
 		struct { double sigma; } rayleigh;
+		struct { /* no params */ } rectangular;
 	} RANDVAR_DATA;	/* union */
 } randvar_t;
 #define RANDVAR_ALLOC()		ALLOC(randvar_t)
@@ -235,6 +237,10 @@ RV_NR_PARAMS(rayleigh, 1)
 CREATE_RANDVAR_ACCESSOR(rayleigh, sigma, double)
 CREATE_RANDVAR_OUTCOME_FUNC1(rayleigh, gen_rayleigh, double, sigma)
 CREATE_RANDVAR_RB_OUTCOME(rayleigh, DBL2NUM)
+/* rectangular */
+RV_NR_PARAMS(rectangular, 0)
+CREATE_RANDVAR_OUTCOME_FUNC0(rectangular, gen_rectangular, double)
+CREATE_RANDVAR_RB_OUTCOME(rectangular, DBL2NUM)
 
 /******************************************************************************/
 /* class and module objects */
@@ -644,6 +650,12 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 			SET_PARAM(rayleigh, sigma);				
 		CASE_END
 
+		CASE(rectangular)
+			SET_KLASS(rectangular);
+
+			RANDVAR_INIT(rectangular);
+		CASE_END
+
 		default:
 			rb_rv = Qnil;
 				
@@ -781,6 +793,7 @@ void Init_random_variable(void)
 	CREATE_RANDOM_VARIABLE_CLASS("Poisson", poisson);
 	CREATE_RANDOM_VARIABLE_CLASS("Rademacher", rademacher);
 	CREATE_RANDOM_VARIABLE_CLASS("Rayleigh", rayleigh);
+	CREATE_RANDOM_VARIABLE_CLASS("Rectangular", rectangular);
 
 	/* initialize the random number generator */
 	rv_init_gen();

@@ -24,5 +24,6 @@ extern double 	gen_exponential(double);
 extern double	gen_pareto(double, double);
 extern int 	gen_rademacher(void);
 extern double 	gen_rayleigh(double);
+extern double	gen_rectangular(void);
 
 #endif /* _XRANDLIB_H_ */

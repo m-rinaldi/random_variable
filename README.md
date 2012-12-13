@@ -19,6 +19,7 @@ To date, the supported random distributions are:
 - Poisson
 - Rademacher
 - Rayleigh
+- Rectangular
 
 and more distributions are on the way.
 
