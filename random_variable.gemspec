@@ -1,13 +1,16 @@
-version = '1.1.0'
+version = '1.2.0'
 date = Time.now; date = "%d-%02d-%02d" % [date.year, date.month, date.day]
 
 Gem::Specification.new do |s|
 	s.name		=	'random_variable'
 	s.version	=	version
 	s.date		=	date
-	s.summary	=	'Random Variables in Ruby'
-	s.description	=	'Create and operate with random variables ' +
-				'in Ruby'
+	s.summary	=	'Random Variables in Ruby for a wide variety ' +
+				'of probability distributions'
+
+	s.description	=	'Probability distributions such as the ' +
+		'Binomial, Beta, Chi-Squared, Normal, Pareto, Poisson, etc.'
+
 	s.authors	=	['Jorge Fco. Madronal Rinaldi']
 	s.email		=	'jorge.madronal.rinaldi@gmail.com'
 	s.license	=	'GPLv3'

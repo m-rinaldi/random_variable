@@ -38,6 +38,14 @@ module RandomVariable
 		end
 	end
 
+	class ChiSquared < Generic
+		# create a <i>Chi-Squared Random Variable</i> with +k+ degrees
+		# of freedom
+		def self.new(k)
+			intern_new(k)
+		end
+	end
+
 	class ContinuousUniform < Generic
 		# create a new <i>Continuous Uniform Random Variable</i> with 
 		# parameters +a+ and +b+
@@ -71,8 +79,8 @@ module RandomVariable
 	end
 
 	class Normal < Generic
-		# create a new <i>Normal Random Variable</i> with parameters
-		# +mu+ and +sigma+
+		# create a new <i>Normal (aka Gaussian) Random Variable</i> 
+		# with parameters +mu+ and +sigma+
 		def self.new(mu = 0.0, sigma = 1.0)
 			intern_new(mu, sigma)
 		end
