@@ -269,6 +269,24 @@ static type_t type(VALUE rb_obj)
 /******************************************************************************/
 /* functions and macros for parameter validity checks */
 /******************************************************************************/
+#define CHECK_NUMBER(x)							\
+			do {						\
+									\
+				if (isinf((x)) == 1)			\
+					rb_raise(rb_eArgError,		\
+						#x " parameter "	\
+						"is Infinity");		\
+				if (isinf((x)) == -1)			\
+					rb_raise(rb_eArgError,		\
+						#x " parameter "	\
+						"is -Infinity");	\
+				if (isnan((x)))				\
+					rb_raise(rb_eArgError,		\
+						#x " parameter "	\
+						"is not a number"	\
+						" (NaN)");		\
+			} while (0)		
+
 #define CHECK_POSITIVE(x) 						\
 			do {						\
 				if ((x) <= 0.0)				\
@@ -376,6 +394,8 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 
 			rb_p = GET_NEXT_ARG(ap);
 			p = NUM2DBL(rb_p);
+
+			CHECK_NUMBER(p);
 	
 			/* 0 <= p <= 1 */
 			CHECK_PROBABILITY(p);
@@ -396,6 +416,9 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 			
 			alpha = NUM2DBL(rb_alpha);
 			beta  = NUM2DBL(rb_beta);
+
+			CHECK_NUMBER(alpha);
+			CHECK_NUMBER(beta);
 
 			/* alpha > 0 */
 			CHECK_POSITIVE(alpha);
@@ -423,6 +446,8 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 
 			n = NUM2LONG(rb_n);
 			p = NUM2DBL(rb_p);
+
+			CHECK_NUMBER(p);
 		
 			/* n >= 0 */	
 			CHECK_NON_NEGATIVE(n);
@@ -467,6 +492,9 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 			a = NUM2DBL(rb_a);
 			b = NUM2DBL(rb_b);
 
+			CHECK_NUMBER(a);
+			CHECK_NUMBER(b);
+
 			/* a < b */
 			CHECK_LESS_THAN(a,b);
 
@@ -478,7 +506,7 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 
 		CASE(discrete_uniform)
 			VALUE rb_a, rb_b;
-			double a,b;
+			long a,b;
 
 			SET_KLASS(discrete_uniform);
 
@@ -509,6 +537,8 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 			rb_mean = GET_NEXT_ARG(ap);
 			mean = NUM2DBL(rb_mean);
 
+			CHECK_NUMBER(mean);
+
 			/* mean > 0 */
 			CHECK_POSITIVE(mean);
 
@@ -528,6 +558,9 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 
 			d1 = NUM2DBL(rb_d1);
 			d2 = NUM2DBL(rb_d2);
+
+			CHECK_NUMBER(d1);
+			CHECK_NUMBER(d2);
 
 			/* d1 > 0 */
 			/* d2 > 0 */
@@ -555,6 +588,7 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 			r = NUM2LONG(rb_r);
 			p = NUM2DBL(rb_p);
 
+			CHECK_NUMBER(p);
 			/* r > 0 */
 			CHECK_POSITIVE(r);
 			/* 0 < p < 0 */
@@ -576,8 +610,12 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 
 			rb_mu = GET_NEXT_ARG(ap);
 			rb_sigma = GET_NEXT_ARG(ap);
+
 			mu = NUM2DBL(rb_mu);
 			sigma = NUM2DBL(rb_sigma);
+
+			CHECK_NUMBER(mu);
+			CHECK_NUMBER(sigma);			
 			
 			/* sigma > 0 */
 			CHECK_POSITIVE(sigma);
@@ -600,6 +638,9 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 			a = NUM2DBL(rb_a);
 			m = NUM2DBL(rb_m);
 
+			CHECK_NUMBER(a);
+			CHECK_NUMBER(m);
+
 			/* a > 0 */
 			CHECK_POSITIVE(a);
 
@@ -620,6 +661,9 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 
 			rb_mean = GET_NEXT_ARG(ap);
 			mean = NUM2DBL(rb_mean); 
+
+			CHECK_NUMBER(mean);
+
 			/* mean > 0 */
 			CHECK_POSITIVE(mean);
 			
@@ -643,6 +687,8 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 			rb_sigma = GET_NEXT_ARG(ap);
 			sigma = NUM2DBL(rb_sigma);
 		
+			CHECK_NUMBER(sigma);
+		
 			/* sigma > 0 */
 			CHECK_POSITIVE(sigma);
 
@@ -663,6 +709,7 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 	va_end(ap);
 	return rb_rv;
 }
+#undef CHECK_NUMBER
 #undef CHECK_POSITIVE
 #undef CHECK_NON_NEGATIVE
 #undef CHECK_LESS_THAN
