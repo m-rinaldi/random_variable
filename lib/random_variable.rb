@@ -35,6 +35,13 @@ require_relative 'ext/random_variable'
 require_relative 'sampleable'
 
 module RandomVariable 
+	# obtain and set an arbitrary new seed 
+	#
+	# @return [Numeric] the new seed
+	def self.new_seed
+		Generator::new_seed
+	end
+
 	# obtain the current seed in use
 	#
 	# @return [Numeric] the current seed

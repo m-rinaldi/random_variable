@@ -1,4 +1,4 @@
-version = '1.2.1'
+version = '1.2.2'
 date = Time.now; date = "%d-%02d-%02d" % [date.year, date.month, date.day]
 
 Gem::Specification.new do |s|
@@ -26,6 +26,11 @@ Gem::Specification.new do |s|
 	s.files << 'lib/distros.rb'	
 	s.files << 'LICENSE'
 	s.files << 'COPYING'
+
+	# test files
+	s.files << 'lib/test.rb'
+	s.files << 'lib/tests/common.rb'
+	s.files << 'lib/tests/poisson.rb'
 
 	# more files in the lib/ext directory
 	s.files << 'lib/ext/extconf.rb'

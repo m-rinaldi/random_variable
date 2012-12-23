@@ -73,7 +73,7 @@ class RandomVariable::Tests::Poisson < Test::Unit::TestCase
 	end
 
 	should "reproduce the same outcomes for the same seed value" do
-		seed = RandomVariable::seed
+		seed = RandomVariable::new_seed
 		x = Poisson.new 113
 		samples = x.outcomes 10
 		RandomVariable::seed = seed

@@ -52,7 +52,7 @@ void rv_gen_set_seed(VALUE rb_seed)
 	rb_RandGen = rb_funcall(rb_cRandom, rb_intern("new"), 1, rb_seed);
 }
 
-VALUE rv_get_new_seed(void)
+VALUE rv_gen_new_seed(void)
 {
 	rb_RandGen = rb_funcall(rb_cRandom, rb_intern("new"), 0);
 	return rv_gen_get_seed();
@@ -64,7 +64,7 @@ VALUE rv_get_new_seed(void)
 void rv_init_gen(void)
 {
 	/* create an instance of the random generator */
-	rv_get_new_seed();
+	rv_gen_new_seed();
 
 	/* tell the GC not to collect the random generator */
 	rb_gc_register_address(&rb_RandGen);
