@@ -21,6 +21,7 @@
 
 void rv_init_gen(void);
 double ranf(void);
+VALUE rv_gen_new_seed(void);
 void rv_gen_set_seed(VALUE);
 VALUE rv_gen_get_seed(void);
 

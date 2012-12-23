@@ -768,6 +768,14 @@ VALUE rb_outcomes(VALUE rb_obj, VALUE rb_nr_times)
 }
 #undef GET_DATA
 
+/******************************************************************************/
+/* set and geet the seed at Ruby level */
+/******************************************************************************/
+static VALUE rb_seed_new(VALUE self)
+{
+	return rv_gen_new_seed();		
+}
+
 static VALUE rb_seed_get(VALUE self)
 {
 	return rv_gen_get_seed();
@@ -778,6 +786,8 @@ static VALUE rb_seed_set(VALUE self, VALUE rb_seed)
 	rv_gen_set_seed(rb_seed);
 	return rb_seed;
 }
+/******************************************************************************/
+
 
 /******************************************************************************/
 /* macros for the extension entry point */
@@ -818,6 +828,7 @@ void Init_random_variable(void)
 
 	/* Generator */
 	rb_mGenerator = rb_define_module_under(rb_mRandomVariable, "Generator");
+	rb_define_singleton_method(rb_mGenerator, "new_seed", rb_seed_new, 0);
 	rb_define_singleton_method(rb_mGenerator, "seed", rb_seed_get, 0);
 	rb_define_singleton_method(rb_mGenerator, "seed=", rb_seed_set, 1);
 
