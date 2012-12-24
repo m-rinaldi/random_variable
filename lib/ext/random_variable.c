@@ -666,7 +666,11 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 
 			/* mean > 0 */
 			CHECK_POSITIVE(mean);
-			
+				
+			/* ensure no overflow */
+			if (mean > LONG_MAX - 0.05 * LONG_MAX)
+				rb_raise(rb_eArgError, "outcomes may overflow");
+	
 			/* mean parameter correct */
 			RANDVAR_INIT(poisson);
 			SET_PARAM(poisson, mean);
