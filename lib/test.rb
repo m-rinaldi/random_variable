@@ -15,8 +15,6 @@
 
 require 'random_variable'
 
-module RandomVariable::Tests
-end
-
+require_relative 'tests/environment.rb'
 require_relative 'tests/bernoulli.rb'
 require_relative 'tests/poisson.rb'

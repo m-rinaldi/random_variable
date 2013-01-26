@@ -13,19 +13,13 @@
 #                                                                              #
 ################################################################################
 
-require_relative 'common.rb'
-
-require 'test/unit'
-
-required_gem 'shoulda'
-required_gem 'random_variable'
-
-class RandomVariable::Tests::Poisson < Test::Unit::TestCase
+class RandomVariable::Tests::Poisson < RandomVariable::Tests::TestCase
 	include RandomVariable
 
-	should "fail instantiating with no parameter" do
-		assert_raise(ArgumentError) { Poisson.new }	
-	end
+	nr_params 1
+#	should "fail instantiating with no parameter" do
+#		assert_raise(ArgumentError) { Poisson.new }	
+#	end
 
 	should "fail instantiating with a NaN parameter" do
 		assert_raise(ArgumentError) { Poisson.new(0.0/0) }

@@ -13,21 +13,13 @@
 #                                                                              #
 ################################################################################
 
-require_relative 'common.rb'
 
-require 'test/unit'
-
-required_gem 'shoulda'
-required_gem 'random_variable'
-
-class RandomVariable::Tests::Bernoulli < Test::Unit::TestCase
+class RandomVariable::Tests::Bernoulli < RandomVariable::Tests::TestCase
 	include RandomVariable
 
 	valid_params = [0.000001, 0.001, 0.1, 0.5, 0.9, 0.99, 0.99999]
 
-	should "fail instantiating with no parameter" do
-		assert_raise(ArgumentError) { Bernoulli.new }	
-	end
+	nr_params 1
 
 	should "fail instantiating with a NaN parameter" do
 		assert_raise(ArgumentError) { Bernoulli.new(0.0/0) }
@@ -35,8 +27,8 @@ class RandomVariable::Tests::Bernoulli < Test::Unit::TestCase
 	end
 
 	should "fail instantiating with a Infinty parameter" do
-		assert_raise(ArgumentError) { Bernoulli.new(0.0/1) }
-		assert_raise(ArgumentError) { Bernoulli.new(-0.0/1) }
+		assert_raise(ArgumentError) { Bernoulli.new(0.0/0) }
+		assert_raise(ArgumentError) { Bernoulli.new(-0.0/0) }
 	
 		huge_number = 2**1024
 		assert_raise(ArgumentError) { Bernoulli.new(huge_number) }
@@ -89,7 +81,7 @@ class RandomVariable::Tests::Bernoulli < Test::Unit::TestCase
 
 	should "reproduce the same outcomes for the same seed value" do
 		seed = RandomVariable::new_seed
-		x = Bernoulli.new 113
+		x = Bernoulli.new 0.113
 		samples = x.outcomes 10_000
 		RandomVariable::seed = seed
 		new_samples = x.outcomes 10_000

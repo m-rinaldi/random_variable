@@ -397,8 +397,8 @@ VALUE rb_create_instance(VALUE rb_obj, ...)
 
 			CHECK_NUMBER(p);
 	
-			/* 0 <= p <= 1 */
-			CHECK_PROBABILITY(p);
+			/* 0 < p < 1 */
+			CHECK_PROBABILITY_EXCL(p);
 
 			/* p parameter correct */
 			RANDVAR_INIT(bernoulli);
